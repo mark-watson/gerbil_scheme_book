@@ -1,4 +1,4 @@
-;;; File: "simple-http-server.scm"
+;;; File: "simple-http-server.ss"
 
 ;; note: Marc Feeley posted this in response to a question I asked on the Scheme newsgroup
 
@@ -37,26 +37,26 @@
     (close-port connection)))
 
 (define (http-get connection document)
- (print (list "document:" document))
- (print port: connection
-        "HTTP/1.0 200 OK\n"
-        "Content-Type: text/html; charset=ISO-8859-1\n"
-        "Connection: close\n"
-        "\n"
-        (<html>
-         (<body>
-          (<h3> "Enter text that contains peoples names")
-          (<form>
-           "<input type=\"text\" name=\"text\" size=\"80\" /><br/>"
-           "<input type=\"submit\" />")
-          "<br/>\n"
-          (if (and
+  (print (list "document:" document))
+  (print port: connection
+         "HTTP/1.0 200 OK\n"
+         "Content-Type: text/html; charset=ISO-8859-1\n"
+         "Connection: close\n"
+         "\n"
+         (<html>
+          (<body>
+           (<h3> "Enter text that contains peoples names")
+           (<form>
+            "<input type=\"text\" name=\"text\" size=\"80\" /><br/>"
+            "<input type=\"submit\" />")
+           "<br/>\n"
+           (if (and
                 (> (string-length document) 0)
                 (substring? "=" document))
-            (<pre>
-             "Names in text:\n"
-             (map (lambda (str) (list str "\n"))
-                  (find-human-names (list->vector (string-tokenize document)) '()))))))))
+               (<pre>
+		"Names in text:\n"
+		(map (lambda (str) (list str "\n"))
+                     (find-human-names (list->vector (string-tokenize document)) '()))))))))
 
 ;; Note: when you define a function using a form like:
 ;;     (define (function-name . body) ..

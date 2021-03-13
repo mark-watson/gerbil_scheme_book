@@ -15,7 +15,7 @@
 
 (define (process-one-word-per-line file-path func)
   (for (line (read-file-lines file-path))
-    (func line)))
+       (func line)))
 
 ;; test:   (process-one-word-per-line "data/human_names/names.male" display)
 
@@ -61,9 +61,9 @@
 
 (define (string-prefix? pattern str)
   (let ((len (string-length pattern)))
-	(and
-	 (>= (string-length str) len)
-	 (equal? len (%string-prefix-length pattern 0 len str 0 100)))))
+    (and
+     (>= (string-length str) len)
+     (equal? len (%string-prefix-length pattern 0 len str 0 100)))))
 
 (define (%string-prefix-length s1 start1 end1 s2 start2 end2)
   (let* ((delta (min (- end1 start1) (- end2 start2)))
@@ -114,12 +114,12 @@
 
 (define (no-noise words)
   (let ((ret '())
-		(num (vector-length words))
-		(word #f))
-	(for (n (in-range num))
-	  (set! word (vector-ref words n))
-	  (if (not (noise-word? word)) (set! ret (cons word ret))))
-	(list->vector (reverse ret))))
+	(num (vector-length words))
+	(word #f))
+    (for (n (in-range num))
+	 (set! word (vector-ref words n))
+	 (if (not (noise-word? word)) (set! ret (cons word ret))))
+    (list->vector (reverse ret))))
 
 
 ;; utility:

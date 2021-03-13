@@ -34,7 +34,7 @@
             (table-set! ret "categories" (cadddr resp))
             ;; TBD: implement summary words, proper name list, and place name list
 
-             (json-write ret)
+            (json-write ret)
             )))
       (print-help)))
 

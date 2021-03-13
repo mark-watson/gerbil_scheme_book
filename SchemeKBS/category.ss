@@ -1,4 +1,4 @@
-;; category.scm - categorization utilities
+;; category.ss - categorization utilities
 
 ;;
 ;; get the category for words in a string
