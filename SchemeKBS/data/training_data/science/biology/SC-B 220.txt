@@ -1,0 +1,133 @@
+PITTSBURGH, Feb. 5 -- President Bush today promoted his call for a 300 percent increase in spending for bioterrorism protection, saying that without the money he may not have the confidence to say America is truly secure.
+
+"It's money that we've got to spend," he said of his $6 billion request. "It's money that will enable me to say we're doing everything we can to protect America."
+
+Standing in front of a group of white-coated doctors, Bush said the money is needed to modernize hospitals, develop new drug treatments, stockpile vaccines and create state-of-the-art health surveillance systems modeled after one he saw here at the University of Pittsburgh Medical Center.
+
+"The best way to protect the homeland is to understand what is taking place on the homeland," Bush said, marveling at the computerized network as an "incredibly useful tool."
+
+Although the theme was homeland defense, the president made his most vigorous remarks about the larger battle against terrorism worldwide. At one point, he chided the news media for spending so much time discussing the whereabouts of Osama bin Laden.
+
+"He's not the issue; the issue's international terror," Bush said. Still, he seized the chance to issue one more stern warning to the al Qaeda leader: "There's no cave deep enough for him to hide. He can run, and he thinks he can hide, but we're not going to give up."
+
+In this battle, the president reminded the crowd of several hundred health care workers, there is no middle ground. "I view this as a struggle of tyranny versus freedom, of evil versus good," he said, repeating what has become a mantra: "Either you're with us or you're against us."
+
+The White House budget released Monday requests nearly $38 billion for homeland defense, $5.9 billion of that dedicated to bioterrorism preparedness.
+
+"I want to make sure that each region around the country has proper equipment and the right amount of medicine for the victims of any attack should it occur," Bush said.
+
+To illustrate his point, Bush and his top health and homeland security advisers visited an innovative lab here that collects emergency room data from 17 hospitals monitoring symptoms that may provide the first hint of an outbreak. The Real-Time Outbreak and Disease Surveillance System, dubbed RODS, tracks patients by Zip code, looking for spikes that often signal an oncoming wave of illness. For example, a jump in fever and respiratory illness in one neighborhood could tip off medical detectives that an anthrax outbreak has occurred.
+
+In New York City, public health officials have long employed such a system in emergency rooms, and it provided an early warning of naturally occurring outbreaks such as the flu. Pittsburgh doctors helped create a similar network in Salt Lake City to track possible outbreaks at the Olympics.
+
+On his tour, Bush peered into a microscope for a glimpse of Bacillus anthracis, the bacteria found in anthrax spores. This strain, the lab technician assured the president, was a harmless batch of spores.
+
+Until the anthrax attacks that claimed five lives last fall, the word bioterrorism rarely passed over the lips of federal officials. Today the president marketed many of his proposals as projects that not only will protect against attacks at home but also will improve the nation's antiquated public health system.
+
+"The monies we spend to protect America today are likely to yield long-term benefits, are likely to provide some incredible cures to diseases that many years ago we never thought would be cured," he said.
+
+But even if the money begins flowing immediately, it will take years, if not decades, to reap many of the benefits. At the National Institutes of Health, labs would receive more than $1 billion for research into new vaccines and treatments. But development, approval and production often take years.
+
+And even if more communities follow the lead of the medical center here, few local or state health offices have the technology to receive and analyze the data, said Michael Wagner, director of the RODS laboratory. The Bush budget includes $300 million to begin that work.
+
+The White House has initiated a major marketing push this week for a budget that Congress must approve, with Bush making his case for the billions he has requested for the military and for homeland security.
+
+Flanked by Homeland Security Director Tom Ridge and Health and Human Services Secretary Tommy G. Thompson, Bush described his daily Oval Office ritual of reading about the latest threats on America. He said: "Every morning I'm reminded my most important job is to make our country secure, to protect our homeland."
+The pudgy, rectangular bacterium that causes anthrax has long had a reputation for being genetically unimaginative. Unlike other kinds of bacteria, which have thrived over time by mutating, diversifying and trying new things in different parts of the world, Bacillus anthracis has seemed stuck in its ways. Until recently, DNA fingerprints of specimens retrieved from England, the United States, South Africa and other countries were virtually indistinguishable.
+
+Now, however, scientists are finding they just weren't looking closely enough. Newly developed high-resolution tests are revealing subtle genetic variations that are apparently unique to many strains and sub-strains of B. anthracis. And as researchers learn precisely how the bacterium's genetic code varies in tiny ways from one laboratory batch to another, they are growing hopeful that they may be able to help federal authorities identify the source of last fall's bioterrorist attacks, which left five people dead, hobbled the U.S. postal system and panicked the nation.
+
+The new findings are the result of a fresh collaboration between two teams of scientists who had toiled quietly and independently for years with the seemingly academic and arcane goal of understanding B. anthracis genetics. Now those two previously low-profile groups - a Rockville biotech company and a group of Arizona scientists - are suddenly in the national spotlight, flush with federal funds and feeling the pressure to break open an investigation that the FBI has conceded is lacking in hot leads.
+
+At the core of the scientists' investigative approach is a key biological truth: All living things gradually accumulate mutations in their genetic codes. In bacteria, offspring typically inherit those changes and add new ones of their own, creating a cumulative and permanently inscribed genetic record of the organism's evolution. By comparing the genetic codes of different individuals, and seeing which ones have similar mutation patterns, scientists can determine which isolates share common familial roots and therefore are most closely related to each other.
+
+The mutations that scientists are looking at are on the double-stranded molecules of DNA that carry the instructions for survival, growth and reproduction in most cells. In the case of B. anthracis, most of that molecular blueprint for life is encoded on a single circular strand of DNA made of 5.1 million subunits, or "bases." (By comparison, the human DNA blueprint contains about 3.1 billion bases.) Each B. anthracis cell also contains two small loops of DNA - one made of 90,000 bases and the other made of 185,000 bases - that carry the instructions for making the toxins and other products that together make B. anthracis so deadly.
+
+The first hint that some strains, or far-flung family lines, of B. anthracis might vary from one another in subtle but reliable ways arose in 1996, when researchers in North Carolina compared a small region of DNA in two strains of the bacterium and noticed something strange. A sequence of 12 DNA bases was repeated four times in every bacterial cell belonging to one strain, but that 12-base sequence was repeated only twice in cells belonging to the other strain. A year later, Paul Keim of Northern Arizona University in Flagstaff reported that he had discovered seven additional regions of the B. anthracis genome that also differed consistently from strain to strain.
+
+Those eight points of comparison have together proven capable of differentiating among several different strains of B. anthracis, but additional hallmarks will be needed if scientists are to differentiate among various substrains, or "isolates" - bacterial populations that belong to the same strain but have been growing and evolving independently in different laboratories.
+
+Investigators know, for example, that the B. anthracis used in the attacks belongs to the so-called Ames strain. But several laboratories around the country have batches of the Ames strain, and all of those laboratory isolates have the same genetic pattern when only the eight markers are considered. To differentiate among those isolates - and to see if one matches the bacteria used in the attacks - scientists want to find additional regions of variability that differ consistently from one Ames isolate to the next.
+
+That posed a daunting problem, though: Where in all those 5.1 million bases should scientists look for such variation? What a waste of energy it would be to spend months or years comparing genetic regions that simply don't differ from isolate to isolate.
+
+Researchers at the Institute for Genomic Research in Rockville (TIGR) were well positioned to provide a shortcut. They had already spent the past two years placing all 5.1 million bases in order for a single strain of B. anthracis. The sequence - the first ever put together for that species of bacterium - is set to be published within the next few weeks.
+
+In October, after the anthrax attacks, the National Science Foundation quickly contracted with TIGR to complete a quick genetic sequence of a second isolate of B. anthracis - one from the body of Bob Stevens, the Florida photo editor who was the first to die from the bioterror attacks. TIGR recently completed that job, and a comparison of the two has revealed some telltale differences.
+
+Those specific differences may turn out to be useful "name tags" for those two strains. But for now, the primary usefulness of the new findings is that they indicate where in the sprawling landscape of 5.1 million bases scientists should focus their efforts as they search for genetic variations unique to each laboratory's version of the Ames strain. And now Keim and his colleagues at Northern Arizona are doing just that.
+
+By focusing on the regions of variability highlighted by the TIGR team, the Arizona scientists have begun to document specific differences in genetic coding that seem to distinguish among previously indistinguishable isolates of the Ames strain. At a meeting in Las Vegas last week, for example, Keim reported that by counting the number of times a particular base was repeated in a specific part of the B. anthracis genome, he could tell which of five different laboratory isolates of the Ames strain he was looking at.
+
+Focusing on that and other emerging genetic hallmarks, Keim has now begun to compare the bacteria used in the attacks to bacteria retrieved by the FBI from various laboratories around the country. It may be that the Florida sample won't match any laboratory isolate exactly, but even a near match could indicate that the terror sample has family roots there.
+
+"It won't prove who did it," said TIGR's Steven Salzberg, "but it can tell the FBI, 'This is a lab you should look at. The bacteria probably came from this lab.'‚"
+
+Of course, anthrax is only one of several diseases that the federal government has listed as likely agents of biological warfare. And even less is known about the genetics of most of them than was known about B. anthracis, said TIGR President Claire Fraser.
+
+"We need to be collecting this kind of information for lots of other pathogens," Fraser said, "for both lab strains and natural isolates of biological warfare agents, so we'll have it available immediately if we ever need it."
+(c) 2002 The Washington Post Company
+Former Army scientist Richard Crosland kept scrupulous notes about the frozen crystals he kept in his lab, and for good reason: The crystals contained botulinum toxin, a biological poison so deadly a single gram could kill a million people.
+
+For 11 years, Crosland carefully logged each shipment of toxin he received and accounted for every molecule, thinking somebody would want to know. But no one asked -- not once during his career as an Army biodefense researcher, and not when he left the job in 1997, hauling away boxes of personal effects that no one checked.
+
+"No one asked questions," Crosland said of his time at U.S. Army Medical Research Institute of Infectious Diseases (USAMRIID), the Pentagon's top biodefense research center at Fort Detrick, Md. "You could literally walk out with anything."
+
+As the FBI investigates possible military links to last fall's anthrax attacks, new revelations suggest that the nation's premier biological defense labs failed at least through the mid-1990s to adopt strict safeguards against the theft of lethal viruses and bacteria. Informal policies and lax accounting procedures for researchers -- described in Army documents and in interviews with former USAMRIID scientists -- could have provided an opening for someone with a grudge or a desire to make money on the black market.
+
+Even more troubling to some scientists was the Army's policy of recruiting foreign researchers to work in some of USAMRIID's most secure labs. A steady stream of researchers from China, the former Soviet bloc and other nations passed through the lab in the 1980s and 1990s to work alongside U.S. scientists, according to Army documents and interviews.
+
+"It blew me away," said one microbiologist who worked at the lab in the 1980s and early 1990s. "I could have lifted vials of anything and they never would have been missed. There was nothing to stop me."
+
+USAMRIID strongly defends its security policies and says there is no evidence that any hazardous microbes in its care were stolen or misused. Security has been sharply tightened since the mid-1990s -- and still further in the past four months, Army officials say.
+
+The reports of security lapses come amid intense scrutiny of USAMRIID and other military labs by FBI officials probing the anthrax attacks. Outwardly, the investigation appears to have stalled, as the FBI has doubled to $2.5 million the reward for information leading to the arrest of whoever was behind the attack. Agents last month e-mailed 40,000 members of the American Society of Microbiology, asking for help. 
+
+Much of the military's biological research on anthrax since the 1940s has been performed at Fort Detrick, one of about 20 research facilities known to possess the strain of the bacterium used in the attacks that killed five people in October and November. No cases of anthrax theft have been reported, but the Army lab's security policies came into question last month with the disclosure that 27 biological specimens had been reported missing in the early 1990s.
+
+The lost microbes, described in Army documents released as part of a lawsuit, included several anthrax specimens as well as the virus that causes ebola hemorrhagic fever. A USAMRIID spokesman said a search turned up all but three of the 27 specimens. Of the three, the only one containing anthrax bacteria had been rendered harmless, spokesman Charles Dasey said. Current security practices are in line with guidelines adopted by the National Institutes of Health, he said.
+
+But, according to former USAMRIID scientists, until recently lab workers could have walked away with live microbes without being challenged. In interviews, the scientists said the lab failed to exercise stringent inventory controls over the pathogens and toxins used by scientists -- a practice that would be considered standard at private labs working with less dangerous material, they said.
+
+"No one ever came in and asked, 'Where's that material you ordered?' Never once did they ask what you did with it," said Crosland, the scientist who worked with botulinum toxin, a substance regarded by bioterrorism experts as the deadliest on Earth. "7-Eleven keeps better inventory than they did."
+
+Another scientist who had worked at Fort Detrick as a young technician said he was surprised to find himself being granted unsupervised access to the most secure, "Bio-hazard Level 4" laboratories, where ebola and other highly virulent pathogens were kept.
+
+"I would work all by myself with some of the most dangerous organisms in the world," said the scientist, who spoke on condition of anonymity. "It wasn't just a matter of security lapses -- there was absolutely no security."
+
+Procedures were no different for foreign scientists who worked at USAMRIID for weeks and sometimes months at a time, the sources said. The scientists, some of whom eventually immigrated to the United States, generally were recruited because of their experience with lethal microbes or expertise in biodefense. "These people would often have unrestricted access to secure lab facilities," said one former USAMRIID researcher. "It was not uncommon to see them working nights and weekends."
+
+One of the visiting scientists was promoted to a senior position overseeing the development of liquid aerosols used in exposing lab animals to anthrax -- despite lacking U.S. citizenship and a security clearance.
+
+According to a 1996 Army memo, USAMRIID also tried to recruit Soviet and Eastern European scientists with military weapons research to work at the Fort Detrick lab "for their expertise and as leverage against an aging workforce."
+
+"It was a concern to me that these scientists were being allowed access not only to the [microbes] but to knowledge and information," said Ayaad Assaad, an Environmental Protection Agency scientist who worked at USAMRIID for nearly a decade.
+
+Army documents from the early 1990s depict an institution in disarray. In a sworn statement in 1992, the newly appointed head of USAMRIID's pathology division told Army investigators that "shenanigans have been going on" at the lab.
+
+Scientists were working "covertly" on unauthorized projects, technicians were being asked to come in on weekends for off-the-books assignments and "quite a bit of stuff was unaccounted for," Lt. Col. Michael Langford is quoted as telling investigators in a transcribed interview.
+
+"It was obvious to me there was little or no organization of that group and little or no accountability of many things," Langford was quoted as saying. Langford, who has since left USAMRIID, declined to comment.
+
+While not disputing that problems had occurred, USAMRIID officials say the chaos of the early 1990s was the product of a major shift in emphasis after the Persian Gulf War. "There was a huge culture change," said Dasey, the USAMRIID spokesman. "Before the war, the threat from weapons of mass destruction wasn't as real as it became after the war. Suddenly the threat was very real."
+
+Part of the change was a shift from an "academic style of research" to an intense focus on the possibility of a biological attack. "Some of the scientists at the time weren't comfortable with that change," Dasey said.
+
+Two of the scientists interviewed, Assaad and Crosland, lost their jobs at USAMRIID as a result of budget cuts in 1997 and have since filed an age discrimination lawsuit, alleging that the Army chose older scientists for the job cuts.
+
+Dasey also defended the recruitment of foreign scientists, a policy that he said is encouraged under the Convention on Biological Weapons. "We have always maintained a posture of openness, including exchanges of information," Dasey said. "Nobody loses when we work together on medical research."
+
+Past weaknesses in security were documented not only at USAMRIID, but also at Department of Energy labs that carry out basic research on "biological select agents" -- bacteria and viruses that can potentially be used as bioterrorist weapons. At one DOE facility, scientists experimented with anthrax bacteria for years before anyone notified the officials responsible for security, an internal audit found.
+
+An investigation by the DOE's inspector general completed last February found that several labs exchanged microbe samples -- including anthrax and the bacteria that cause brucellosis and plague -- without reporting the transfers to the Centers for Disease Control and Prevention, as required by the law. Another lab had "provided potentially misleading information" to the CDC about whether it was qualified to handle certain kinds of dangerous pathogens, the inspector general's report said.
+
+No one was harmed, but the lapses could have placed the public at risk, the investigators concluded.
+
+"The department's activities lacked sufficient federal oversight, consistent policy and standardized implementing procedures, resulting in the potential for greater risk to workers and possibly to others," the report said.
+
+The DOE, in a statement, said it had adopted several measures in the past year to safeguard its workers and the public. New polices require all DOE labs and contractors to follow CDC guidelines on handling hazardous microbes, a department spokesman said.
+
+Tara O'Toole, DOE undersecretary for the environment, safety and health from 1993 to 1997, acknowledged that biological security at that time was not the priority it is today.
+
+"It's a measure of how fast things have changed," said O'Toole, now director of the Center for Civilian Biodefense Studies at Johns Hopkins University. "It is unfair to impose January 2002 standards and sensibilities on 1999."
+

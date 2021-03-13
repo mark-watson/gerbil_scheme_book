@@ -1,0 +1,29 @@
+Nonlinear Laser with Ultralow Threshhold
+Physicists at Caltech have created a laser that accomplishes a highly efficient buildup of coherent light in a small space. Light is sent from an optical fiber into a 70-micron silica sphere. Here the light races around the edge of the sphere in a "whispering gallery" mode. The building up of light within the sphere is characterized by a parameter referred to as the quality (or Q) value, and in this case it is several hundred million, a record. The input light can build up to such an extent that a distortion in the silica glass comes about, and this engenders light emission. 
+
+This is an example of a Raman laser, one which achieves amplification of light by way of a nonlinear response (the Raman effect) to an intense exciting field. The advantage of Raman lasers is that they are tunable and can be used as pumps for other lasers. The disadvantage is that Raman lasers normally need a high-power input to work at all. But the Caltech result achieves this end at power levels (tens of microwatts) 1000 times less than other Raman lasers, and in a much smaller package. Besides offering tunable microlasing capabilities, the nonlinear properties of light in the silica microspheres offer new ways of studying quantum optics. (Spillane et al., Nature, 7 February 2002; contact Kerry Vahala, 626-395-2144, vahala@caltech.edu.)
+Nonlinear Laser with Ultralow Threshhold
+Physicists at Caltech have created a laser that accomplishes a highly efficient buildup of coherent light in a small space. Light is sent from an optical fiber into a 70-micron silica sphere. Here the light races around the edge of the sphere in a "whispering gallery" mode. The building up of light within the sphere is characterized by a parameter referred to as the quality (or Q) value, and in this case it is several hundred million, a record. The input light can build up to such an extent that a distortion in the silica glass comes about, and this engenders light emission. 
+
+This is an example of a Raman laser, one which achieves amplification of light by way of a nonlinear response (the Raman effect) to an intense exciting field. The advantage of Raman lasers is that they are tunable and can be used as pumps for other lasers. The disadvantage is that Raman lasers normally need a high-power input to work at all. But the Caltech result achieves this end at power levels (tens of microwatts) 1000 times less than other Raman lasers, and in a much smaller package. Besides offering tunable microlasing capabilities, the nonlinear properties of light in the silica microspheres offer new ways of studying quantum optics. (Spillane et al., Nature, 7 February 2002; contact Kerry Vahala, 626-395-2144, vahala@caltech.edu.)
+Cold Antihydrogen Atoms
+Cold antihydrogen atoms might have been made, for the first time, in an experiment at the CERN lab, where positrons and antiprotons are brought together in a bottle made of electric and magnetic fields. 
+
+Nature allows the existence of antiparticles but hasn't seen fit to make a lot of them. Modest amounts of antiprotons show up in cosmic ray showers, and positrons (antielectrons) are forged in certain high-energy regions of the sky such as galactic nuclei. 
+
+But if larger forms of anti-matter like anti-atoms, anti-stars, and anti-galaxies were plentiful in the visible part of the universe then we would see the catastrophic gamma ray glare from places where matter brushes up against antimatter. Such radiation has not been seen and scientists must make their own anti-atoms artificially. 
+
+Making antihydrogen is difficult, however, because positrons and antiprotons, even when they can be marshaled and brought near each other, are usually going past each other too quickly for neutral atoms to form. 
+
+A few years ago a dozen or so hot antihydrogen atoms were made on the fly amid violent scattering interactions at CERN and Fermilab (Updates 253, 297). These did not dally long enough to be studied, but instead expired quickly when they crashed into detectors that established the antihydrogen's brief existence.
+
+
+At CERN several experiments are devoted to making cold anti-atoms in a controlled environment amenable to detailed studies. The main goal here is to determine whether the laws of physics (gravity, quantum mechanics, relativity, etc.) apply to anti-atoms the same as they do to regular atoms. 
+
+At this week's meeting of the American Association for the Advancement of Science (AAAS) in Boston, Gerald Gabrielse of Harvard, spokesperson for the Antihydrogen Trap Collaboration (ATRAP), reported new results. 
+
+In this experiment 6-MeV antiprotons (themselves made by smashing a beam of protons into a target) are slowed by a factor of 10 billion (to an equivalent temperature of 4 K), partly by mixing them with cold electrons, and then collected in a trap. Positrons from the decay of sodium-22 nuclei are cooled and collected at the other end of the device. Eventually about 300,000 positrons are electrically nudged into the vicinity of about 50,000 antiprotons.
+
+
+Gabrielse believes that what sits in the trap isn't entirely a neutral plasma consisting of coincident positron and antiproton clouds, and that cold antihydrogen atoms might have formed. More diagnostic equipment being installed now may settle the issue in the coming months. A larger version of the ATRAP apparatus, which might be in operation as early as this fall, should allow the researchers to introduce some lasers for the purpose of studying the spectroscopy of prospective anti-hydrogen atoms in the trap.
+
