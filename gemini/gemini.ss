@@ -26,22 +26,12 @@
               (endpoint (string-append "https://generativelanguage.googleapis.com/v1beta/models/"
                                        model ":generateContent?key=" api-key)))
 
-         (displayln endpoint)
-         (displayln "body-string:\n" body-string)
-
          (let ((response (http-post endpoint headers: headers data: body-string)))
-           (displayln "response:") (pretty-print response)
            (if (= (request-status response) 200)
-               (let* ((response-json (request-json response)))
-                 (displayln "response-json:") (displayln response-json)
-                 (let* ((candidate (car (hash-ref response-json 'candidates)))
-                        (content (hash-ref candidate 'content))
-                        (p1 (car (hash-ref content 'parts))))
-                   (displayln "p1: " p1)
-                   ;;(displayln "content:") (pprint-hashtable content)
-                   (displayln "\n------")
-                   ;;(let* ((parts (hash-ref 'parts content)))
-                   ;;  (displayln "parts:") (displayln parts) ;; (pprint-hashtable part)
-                     (hash-ref p1 'text))))))))
+               (let* ((response-json (request-json response))
+                      (candidate (car (hash-ref response-json 'candidates)))
+                      (content (hash-ref candidate 'content))
+                      (p1 (car (hash-ref content 'parts))))
+                     (hash-ref p1 'text)))))))
 
 ;;   (gemini "why is the sky blue? be very concise")
