@@ -36,3 +36,9 @@ Please note that the LGPL is "business friendly": you can use the source code fo
 Please visit my web site: https://markwatson.com
 
 I appreciate readers supporting my work by buying my books even though they can be read free online: [https://leanpub.com/u/markwatson](https://leanpub.com/u/markwatson)
+
+Follow me on Mastodon: [https://mastodon.social/@mark_watson](https://mastodon.social/@mark_watson)
+
+Follow me on X: [https://x.com/mark_l_watson](https://x.com/mark_l_watson)
+
+Follow me on Facebook: [https://www.facebook.com/markwatson314](https://www.facebook.com/markwatson314)
