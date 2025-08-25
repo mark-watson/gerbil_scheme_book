@@ -23,7 +23,7 @@
          bindings)))
 
 (def (query-dbpedia sparql-query)
-  (let* ((endpoint "http://dbpedia.org/sparql")
+  (let* ((endpoint "https://query.wikidata.org/bigdata/namespace/wdq/sparql?query={sparql-query}")
          (encoded-query (uri-encode sparql-query))
          (request-url (string-append endpoint "?query=" encoded-query))
          ;; Request the specific JSON format for SPARQL results
