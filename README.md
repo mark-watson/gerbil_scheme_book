@@ -28,7 +28,7 @@ This book may be shared using the Creative Commons "share and share alike, no mo
 
 Copyright 2025 Mark Watson. All rights reserved.
 
-Please note that the LGPL is "business friendly": you can use the source code for any purposes if you maintain my copyright.
+Please note that the LGPL is "business friendly": you can use the source code for any purposes if you reference my copyright and code origin.
 
 
 ## Request from the author
