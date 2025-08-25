@@ -39,6 +39,8 @@ I appreciate readers supporting my work by buying my books even though they can 
 
 Follow me on Mastodon: [https://mastodon.social/@mark_watson](https://mastodon.social/@mark_watson)
 
+Subscribe to me on Substack: [https://marklwatson.substack.com](https://marklwatson.substack.com)
+
 Follow me on X: [https://x.com/mark_l_watson](https://x.com/mark_l_watson)
 
 Follow me on Facebook: [https://www.facebook.com/markwatson314](https://www.facebook.com/markwatson314)
