@@ -1,0 +1,30 @@
+# Setting Up Gerbil Scheme Development Environment
+
+TBD
+
+## Installation
+
+### Setup for macOS
+
+### Setup for Linux
+
+## Emacs Configuration
+
+Assuming that you have Emacs installed withthe file **~/.emacs** and the directory **~/.emacs.d/**, copy the following two files into **~/.emacs.d/**:
+
+- [https://github.com/gambit/gambit/blob/master/misc/gambit.el](https://github.com/gambit/gambit/blob/master/misc/gambit.el)
+- [https://github.com/mighty-gerbils/gerbil/blob/master/etc/gerbil-mode.el](https://github.com/mighty-gerbils/gerbil/blob/master/etc/gerbil-mode.el)
+
+Then add the following to your **~/.emacs** file:
+
+```lisp
+(load "~/.emacs.d/gambit.el")
+(load "~/.emacs.d/gerbil-mode.el")
+
+(autoload 'gerbil-mode "gerbil-mode" "Gerbil editing mode." t)
+(require 'gambit)
+(add-hook 'inferior-scheme-mode-hook 'gambit-inferior-mode)
+(defvar gerbil-program-name
+  (expand-file-name "/opt/gerbil/bin/gxi")) ; adjust for your GERBIL_INSTALL_PREFIX
+(setq scheme-program-name gerbil-program-name)
+```
