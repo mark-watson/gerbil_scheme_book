@@ -22,13 +22,13 @@ You will find useful tutorial examples for using Gerbil Scheme in the sub-direct
 
 While Gerbil Scheme is another dialect in the Lisp family, it is like Racket Scheme in that it is "opinionated", reflecting the Gerbil developers'  style an philosophy.
 
-Gerbil is built on Gambit Scheme, a high-performance, retargetable compile.  Gerbil inherits a legacy of speed and portability while introducing a state-of-the-art module and object system inspired by Racket. The result is a language engineered for creating efficient, concurrent, and robust long-running applications, positioning it as a powerful tool for tasks ranging from web services to distributed systems.
+Gerbil is built on Gambit Scheme, a high-performance, retargetable compiler.  Gerbil inherits a legacy of speed and portability while introducing a state-of-the-art module and object system inspired by Racket. The result is a language engineered for creating efficient, concurrent, and robust long-running applications, positioning it as a powerful tool for tasks ranging from web services to distributed systems.
 
 Gerbil has a comprehensive standard library that provides a "batteries included" experience uncommon in the often-fragmented Scheme ecosystem. Rather than relying on a disparate collection of third-party packages for fundamental operations, Gerbil offers canonical, high-quality, and officially maintained implementations for core functionalities. This includes built-in libraries for HTTP clients and servers, JSON parsing and serialization, cryptographic primitives, and database drivers. This approach favors a strong, coherent core, ensuring that developers have a stable and predictable foundation for building complex systems.
 
 Gerbil Scheme can also function as a systems language with its "Integrated FFI" (Foreign Function Interface). This FFI allows Gerbil code to interface directly and efficiently with libraries written in C. The FFI is useful for specialized applications like high-speed data parsing or hardware interaction.
 
-Gerbil provides powerful general-purpose primitives and expects the developer to compose them to interact with specific protocols, often for systems-level software development.
+Gerbil provides powerful general-purpose primitives and expects the developer to compose these primitive components to interact with specific protocols, often for systems-level software development.
 
 ### Gerbil Ecosystem: Package Management and Foundational Libraries
 
