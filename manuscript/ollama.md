@@ -68,7 +68,7 @@ time=2025-08-26T16:05:50.161-07:00 level=INFO source=routes.go:1318 msg="server 
 
 ## Example Output
 
-You need to have Ollama installed on your system and you should pull the model you want to experiment with.
+You need to have Ollama installed on your system and you should pull the model you want to experiment with. 
 
 ```bash
 $ gxi -L ollama.ss -
