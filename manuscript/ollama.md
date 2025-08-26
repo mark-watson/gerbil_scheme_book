@@ -6,7 +6,8 @@ TBD
 
 ## Example Code
 
-```scheme
+{lang="scheme", linenos=off}
+```
 (import :std/net/request :std/text/json)
 (export ollama)
 

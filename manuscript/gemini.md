@@ -8,7 +8,8 @@ TBD
 
 TBD
 
-```scheme
+{lang="scheme", linenos=off}
+```
 (import :std/net/request
         :std/text/json)
 

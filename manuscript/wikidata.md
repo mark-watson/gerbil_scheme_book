@@ -6,7 +6,8 @@ TBD
 
 ## Example Code
 
-```scheme
+{lang="scheme", linenos=off}
+```
 ;; File: wikidata.ss
 (import :std/net/request
         :std/text/json

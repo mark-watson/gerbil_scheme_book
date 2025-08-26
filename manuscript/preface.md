@@ -4,18 +4,34 @@ I have used Lisp languages since the late 1970s, Common Lisp and Clojure profess
 
 Both the source code examples and the manuscript files for this book are maintained in a single GitHub repository: [https://github.com/mark-watson/gerbil_scheme_book](https://github.com/mark-watson/gerbil_scheme_book). I recommend that you keep a local copy:
 
-    git clone https://github.com/mark-watson/gerbil_scheme_book.git
+{linenos=off}
+```
+git clone https://github.com/mark-watson/gerbil_scheme_book.git
+```
 
 ## A Comment on Licenses
 
-The source code examples are licensed using the "business friendly" LGPL license and the manuscript files under a Creative Commons Share and Share Alike, No Commercial Reuse license. It is my hope, dear reader, that you get value from this material and reuse it in your own projects. Please note that LGPL software can be freely mixed in projects with other code using Apache 2, MIT, etc. licenses. LGPL code can be freely used in commercial applications but if you modify LGPL code you need to publicly release just your changes to the LGPL code, not the code you write. LGPL is very different from the GPL and AGPL licenses!
+The source code examples are provided under the LGPL (Lesser General Public License), a “business-friendly” license. The manuscript files are released under a Creative Commons Attribution–ShareAlike, Non-Commercial license.
+
+My goal, dear reader, is that you find value in this material and freely reuse it in your own projects.
+
+A few key points about the LGPL:
+- Compatibility: LGPL code can be combined with code under other popular licenses such as Apache 2.0, MIT, etc.
+- Commercial use: You are free to use LGPL code in commercial applications without restrictions.
+- Modifications: If you modify the LGPL portions of the code, you must make those changes publicly available. However, you do not need to release your own original code that merely uses or links against the LGPL code.
+
+This makes the LGPL very different from the more restrictive GPL and AGPL licenses.
+
 
 ## History and Background to the Gerbil Scheme Project
 
 I recommend that you keep a local the GitHub repository for Gerbil Scheme:
 
-    git clone https://github.com/mighty-gerbils/gerbil.git
-    
+{linenos=off}
+```
+git clone https://github.com/mighty-gerbils/gerbil.git
+```
+
 You will find useful tutorial examples for using Gerbil Scheme in the sub-directory **gerbil/src/tutorial**.
 
 ### Introduction: Gerbil as a Systems Language
@@ -33,8 +49,6 @@ Gerbil provides powerful general-purpose primitives and expects the developer to
 ### Gerbil Ecosystem: Package Management and Foundational Libraries
 
 Navigating any programming ecosystem begins with understanding its tooling for package management and the core libraries that form the bedrock of application development. In Gerbil, these components are designed with the same philosophy of directness and control that characterizes the language itself.
-
-The Gerbil Package Manager (gxpkg)
 
 Gerbil includes a command-line package manager **gxpkg**, invoked as **gerbil pkg** or its alias **gxpkg**.
 

@@ -17,7 +17,8 @@ Assuming that you have Emacs installed withthe file **~/.emacs** and the directo
 
 Then add the following to your **~/.emacs** file:
 
-```lisp
+{lang="lisp", linenos=off}
+```
 (load "~/.emacs.d/gambit.el")
 (load "~/.emacs.d/gerbil-mode.el")
 
