@@ -52,5 +52,19 @@ TBD
 
 ## Example Output
 
-TBD
+Change directory to **source-code/gemini** an run:
+
+```console
+$ gxi -L gemini.ss -
+> (gemini "why is the sky blue? be very concise")
+"Earth's atmosphere scatters blue light more than other colors."
+
+> (gemini "Sally is 77, Bill is 32, and Alex is 44 years old. Pairwise, what are their age differences? Print results in JSON format. Be concise and only provide a correct answer, no need to think about different correct answers.")
+"```json\n{\n  \"Sally_Bill\": 45,\n  \"Sally_Alex\": 33,\n  \"Bill_Alex\": 12\n}\n```"
+
+> (gemini "Sally is 77, Bill is 32, and Alex is 44 years old. Pairwise, what are their age differences? Print results in JSON format. Be concise and only provide a correct answer, no need to think about different correct answers. Only return the JSON text, don't add markdown like ```json")
+"{\"Sally_Bill\": 45, \"Sally_Alex\": 33, \"Bill_Alex\": 12}"
+```
+
+Notice how Gemini initially returned the JSON results in Markdown format and I modified the prompt to get the output format I wanted. Another good technique is to give LLMs an example of the output format you want in the prompt.
 

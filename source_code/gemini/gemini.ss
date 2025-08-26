@@ -27,7 +27,7 @@
            (endpoint (string-append "https://generativelanguage.googleapis.com/v1beta/models/"
                                     model ":generateContent?key=" api-key)))
       (let ((response (http-post endpoint headers: headers data: body-string)))
-        (displayln response)
+        ;;(displayln response)
         (if (= (request-status response) 200)
           (let* ((response-json (request-json response))
                  (candidate (car (hash-ref response-json 'candidates)))
