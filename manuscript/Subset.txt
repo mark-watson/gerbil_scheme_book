@@ -1,0 +1,7 @@
+preface.md
+setup.md
+gemini.md
+ollama.md
+openai.md
+wikidata.md
+nlp.md
