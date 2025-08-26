@@ -33,4 +33,4 @@
                    status: (request-status response)
                    body: (request-text response)))))))
 
-(openai "why is the sky blue? be very concise")
+;; (openai "why is the sky blue? be very concise")
