@@ -92,6 +92,7 @@ $(GERBIL_EXE): $(GERBIL_SRC) rdfwrap.ss $(SHLIB)
 clean:
 	rm -f $(OBJ_C) $(OBJ_PIC) $(DEMO_BIN) $(SHLIB) $(GERBIL_EXE)
 	rm -rf $(GERBIL_OUT_DIR)
+	rm -rf test DEMO_rdfwrap TEST_client libRDFWrap.dylib .gerbil_build
 
 print-flags:
 	@echo "HAVE_PKGCFG = $(HAVE_PKGCFG)"
