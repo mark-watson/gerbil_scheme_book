@@ -13,10 +13,7 @@
 (export main)
 (import "ffi" :gerbil/gambit)
 
-(define (write-file22 path content)
-  (let ((p (open-output-file path)))
-    (display content p)
-    (close-output-port p)))
+
 
 (define (read-file path)
   (let ((p (open-input-file path)))
@@ -38,7 +35,7 @@
 ") (display actual) (newline)
         (exit 1))))
 
-(define (main args)
+(define (main . args)
   (let* ((ttl-file "sample.ttl")
          (ttl-content "@prefix ex: <http://example.org/> .
 ex:s ex:p ex:o .
@@ -46,7 +43,7 @@ ex:s ex:p ex:o .
          (expected-nt "<http://example.org/s> <http://example.org/p> <http://example.org/o> .
 "))
     ;; Prepare sample Turtle file
-    (write-file22 ttl-file ttl-content)
+    (write-file ttl-file ttl-content)
 
     ;; Exercise FFI with explicit syntax
     (let ((nt1 (raptor-parse-file->ntriples ttl-file "turtle")))
@@ -62,24 +59,4 @@ ex:s ex:p ex:o .
 
     (display "All tests passed.
 ")))
-
-(let* ((ttl-file "sample.ttl")
-       (ttl-content "@prefix ex: <http://example.org/> .\nex:s ex:p ex:o .\n")
-       (expected-nt "<http://example.org/s> <http://example.org/p> <http://example.org/o> .\n"))
-  ;; Prepare sample Turtle file
-  (write-file ttl-file ttl-content)
-
-  ;; Exercise FFI with explicit syntax
-  (let ((nt1 (raptor-parse-file->ntriples ttl-file "turtle")))
-    (assert-equal expected-nt nt1 "turtle -> ntriples"))
-
-  ;; Exercise FFI with syntax guessing
-  (let ((nt2 (raptor-parse-file->ntriples ttl-file "guess")))
-    (assert-equal expected-nt nt2 "guess -> ntriples"))
-
-  ;; Clean up
-  (when (file-exists? ttl-file)
-    (delete-file ttl-file))
-
-  (display "All tests passed.\n"))
 

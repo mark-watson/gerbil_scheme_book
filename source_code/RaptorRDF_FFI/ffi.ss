@@ -77,7 +77,7 @@ static char* parse_file_to_ntriples(const char* filename, const char* syntax_nam
 'C'
   )
 
-  ;; Scheme-visible wrapper:
+  ;; Scheme visible wrapper:
   (define-c-lambda raptor-parse-file->ntriples
     (char-string       ;; filename
      char-string)      ;; syntax name, e.g., "turtle", "rdfxml", or "guess"
