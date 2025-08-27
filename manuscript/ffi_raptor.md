@@ -8,7 +8,7 @@ We will walk through the process step by step: setting up the Gerbil Scheme FFI 
 
 ## Implementation of a FFI Bridge Library for Raptor
 
-The library is located in the file ** gerbil_scheme_book/source_code/RaptorRDF_FFI/ffi.ss**. This code demonstrates how to use the Foreign Function Interface (FFI) to integrate with the Raptor RDF C library. It provides a Scheme-accessible procedure, **raptor-parse-file->ntriples**, which parses an RDF file in a specified syntax (such as Turtle or RDF/XML) and returns the results as an N-Triples–formatted string. This example highlights the practical use of FFI in Gerbil Scheme: exposing a C function to Scheme, managing memory safely across the boundary, and translating RDF data into a representation that Scheme programs can process directly.
+The library is located in the file **gerbil_scheme_book/source_code/RaptorRDF_FFI/ffi.ss**. This code demonstrates how to use the Foreign Function Interface (FFI) to integrate with the Raptor RDF C library. It provides a Scheme-accessible procedure, **raptor-parse-file->ntriples**, which parses an RDF file in a specified syntax (such as Turtle or RDF/XML) and returns the results as an N-Triples–formatted string. This example highlights the practical use of FFI in Gerbil Scheme: exposing a C function to Scheme, managing memory safely across the boundary, and translating RDF data into a representation that Scheme programs can process directly.
 
 ```scheme
 (export raptor-parse-file->ntriples)
@@ -98,13 +98,13 @@ static char* parse_file_to_ntriples(const char* filename, const char* syntax_nam
     "parse_file_to_ntriples"))
 ```
 
-The C portion begins by including the raptor2.h header and defining a callback function, **triples_to_iostr**, which takes RDF statements and writes them to a Raptor **iostream** in N-Triples format. This callback escapes subjects, predicates, and objects correctly and ensures triples are terminated with a period and newline, conforming to the N-Triples standard. The main work is performed in **parse_file_to_ntriples**, which initializes a Raptor world and parser, configures the statement handler to use the callback, and sets up an **iostream** that accumulates parsed triples into a string buffer. Error checks are in place at every step, ensuring resources such as the world, parser, URIs, and iostream are properly freed if initialization fails.
+The C portion begins by including the **raptor2.h** header and defining a callback function, **triples_to_iostr**, which takes RDF statements and writes them to a Raptor **iostream** in N-Triples format. This callback escapes subjects, predicates, and objects correctly and ensures triples are terminated with a period and newline, conforming to the N-Triples standard. The main work is performed in **parse_file_to_ntriples**, which initializes a Raptor world and parser, configures the statement handler to use the callback, and sets up an **iostream** that accumulates parsed triples into a string buffer. Error checks are in place at every step, ensuring resources such as the world, parser, URIs, and iostream are properly freed if initialization fails.
 
 After setup, the parser processes the input file identified by its filename and syntax. Each RDF statement is converted into N-Triples and appended to the output string via the **iostream**. Once parsing is complete, the parser, URIs, iostream, and world are released, leaving a fully materialized string containing the N-Triples serialization. This string is returned to Scheme through the FFI, where Gambit copies it into a managed Scheme string. On the Scheme side, the **define-c-lambda** form binds this C function as the procedure **raptor-parse-file->ntriples**, exposing it with the expected **(filename syntax-name) -> ntriples-string** interface. The result is a clean abstraction: Scheme code can call **raptor-parse-file->ntriples** with an RDF file and syntax, receiving back normalized N-Triples ready for further processing in Gerbil Scheme.
 
 ## Test Code
 
-This Gerbil Scheme testcode in the file **test.ss** exercises the FFI binding **raptor-parse-file->ntriples** by creating a minimal Turtle input, invoking the parser in two modes (“turtle” and “guess”), and asserting that both produce the same canonical N-Triples output. It’s designed to be self-contained: it writes a temporary .ttl file, runs the conversion twice, compares results against an expected string, then cleans up and prints status.
+This Gerbil Scheme test code in the file **test.ss** exercises the FFI binding **raptor-parse-file->ntriples** by creating a minimal Turtle input, invoking the parser in two modes (“turtle” and “guess”), and asserting that both produce the same canonical N-Triples output. It’s designed to be self-contained: it writes a temporary .ttl file, runs the conversion twice, compares results against an expected string, then cleans up and prints status.
 
 ```scheme
 ;; Simple test for ffi.ss: validates N-Triples output
@@ -162,7 +162,7 @@ ex:s ex:p ex:o .
 ")))
 ```
 
-This code exports main and imports the FFI wrapper. Utility helpers include write-file (persist a string to disk), read-file (characterwise file read; defined but unused here), and assert-equal, which prints PASS/FAIL labels and exits with non-zero status on mismatch. In main, a small Turtle document defines a simple triple using the ex: prefix; the corresponding expected N-Triples string is the fully expanded IRI form with a terminating period and newline.
+This code exports main and imports the FFI wrapper. Utility helpers include **write-file** (persist a string to disk), **read-file** (characterwise file read; defined but unused here), and **assert-equal**, which prints PASS/FAIL labels and exits with non-zero status on mismatch. In function **main** a small Turtle document defines a simple triple using the ex: prefix; the corresponding expected N-Triples string is the fully expanded IRI form with a terminating period and newline.
 
 The test proceeds in two phases: first it calls **raptor-parse-file->ntriples ttl-file** "turtle" and checks the result; then it repeats using "guess" to confirm the parser’s auto-detection path yields identical serialization. After both assertions pass, it deletes the temporary file and prints “All tests passed.” The result is a minimal but effective smoke test verifying the FFI, Raptor’s parsing/serialization, and the contract that both explicit syntax selection and guessing produce stable N-Triples output.
 
