@@ -6,6 +6,19 @@ Install:
     brew install rasqal
 
 ```
-make
-./rdfwrap data.ttl "select ?s ?p ?o where {?s ?p ?o}"
+$ make
+
+$ ./rdfwrap mini.nt "SELECT ?s ?p ?o WHERE { ?s ?p ?o }"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/title>	"AI Breakthrough Announced"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/creator>	<http://example.org/alice>
+<http://example.org/alice>	<http://xmlns.com/foaf/0.1/name>	"Alice Smith"
+
+$ ./rdfwrap data.ttl "SELECT ?s ?p ?o WHERE { ?s ?p ?o }"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/title>	"AI Breakthrough Announced"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/creator>	<http://example.org/alice>
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/date>	"2025-08-27"
+<http://example.org/article2>	<http://purl.org/dc/elements/1.1/title>	"Local Team Wins Championship"
+<http://example.org/article2>	<http://purl.org/dc/elements/1.1/creator>	<http://example.org/bob>
+<http://example.org/alice>	<http://xmlns.com/foaf/0.1/name>	"Alice Smith"
+<http://example.org/bob>	<http://xmlns.com/foaf/0.1/name>	"Bob Jones"
 ```
