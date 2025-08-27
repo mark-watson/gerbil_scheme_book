@@ -2,3 +2,7 @@
 *.o
 *.scm
 test
+DEMO_rdfwrap
+TEST_client
+libRDFWrap.dylib
+.gerbil_build/
