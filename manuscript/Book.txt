@@ -6,3 +6,4 @@ openai.md
 wikidata.md
 nlp.md
 ffi_raptor.md
+ffi_wrapper.md
