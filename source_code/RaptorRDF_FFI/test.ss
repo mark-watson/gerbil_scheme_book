@@ -1,19 +1,13 @@
 ;; Simple test for ffi.ss: validates N-Triples output
 
 (import "ffi")
+(export main)
+(import "ffi" :gerbil/gambit)
 
 (define (write-file path content)
   (let ((p (open-output-file path)))
     (display content p)
     (close-output-port p)))
-
-
-
-
-(export main)
-(import "ffi" :gerbil/gambit)
-
-
 
 (define (read-file path)
   (let ((p (open-input-file path)))
@@ -29,10 +23,8 @@
       (begin (display "PASS ") (display label) (newline) #t)
       (begin
         (display "FAIL ") (display label) (newline)
-        (display "Expected:
-") (display expected) (newline)
-        (display "Actual:
-") (display actual) (newline)
+        (display "Expected:\n") (display expected) (newline)
+        (display "Actual:\n") (display actual) (newline)
         (exit 1))))
 
 (define (main . args)
