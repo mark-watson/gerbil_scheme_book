@@ -1,4 +1,5 @@
-(import "rdfwrap" :std/srfi/13)
+(import "rdfwrap"
+	:std/srfi/13)
 (export main)
 
 (define default-query "SELECT ?s ?p ?o WHERE { ?s ?p ?o }")
@@ -10,7 +11,7 @@
   (display default-query) (newline))
 
 (define (main . args)
-  (let* ((prog (car (command-line)))
+  (let* ((prog DEMO_rdfwrap") ; shuld use (car (commandline)) but not available on Linux
          (path (if (pair? args) (car args) "mini.nt"))
          (rawq (if (and (pair? args) (pair? (cdr args))) (cadr args) default-query))
          (query (if (string-prefix? "@" rawq)

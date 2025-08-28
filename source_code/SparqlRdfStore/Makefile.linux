@@ -1,0 +1,81 @@
+# Makefile for Ubuntu Linux — DEMO binary + FFI library + Gerbil client
+
+# ---- Tools ----
+CC         ?= cc
+PKG_CONFIG ?= pkg-config
+GXC        ?= gxc
+
+# ---- Sources / Outputs ----
+SRC_C      := C-source/wrapper.c
+OBJ_C      := $(SRC_C:.c=.o)
+OBJ_PIC    := C-source/wrapper.pic.o
+
+DEMO_BIN   := DEMO_rdfwrap
+SHLIB      := libRDFWrap.so          # Linux shared library
+GERBIL_EXE := TEST_client
+GERBIL_SRC := test.ss
+
+# ---- Library Flags (using pkg-config) ----
+# Use pkg-config to get compiler and linker flags for dependencies.
+# This is the standard way on Linux and avoids hardcoded paths.
+PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags sord-0 serd-0 rasqal raptor2)
+PKG_LDLIBS := $(shell $(PKG_CONFIG) --libs   sord-0 serd-0 rasqal raptor2)
+
+# Extra libs sometimes needed by transitive deps or gerbil toolchain
+EXTRA_LDLIBS := -lssl -lcrypto -lz -lm
+
+# ---- Final flags ----
+CFLAGS  ?= -Wall -O2
+CFLAGS  += $(PKG_CFLAGS)
+
+LDLIBS  += $(PKG_LDLIBS) $(EXTRA_LDLIBS)
+LDFLAGS +=
+
+# Linker flags for the shared library on Linux
+DYNLIB_LDFLAGS := -shared -Wl,-soname,$(SHLIB)
+
+# Gerbil compile/link flags
+GERBIL_CFLAGS := $(CFLAGS)
+# Use $$ORIGIN for the rpath on Linux. This tells the executable to look for
+# the shared library in its own directory. The '$$' escapes the '$' for Make.
+GERBIL_LDOPTS := -L$(CURDIR) -lRDFWrap $(LDLIBS) -Wl,-rpath,'$$ORIGIN'
+
+# Where gxc writes intermediate artifacts; keep it inside workspace
+GERBIL_OUT_DIR ?= .gerbil_build
+
+# ---- Default target ----
+all: $(DEMO_BIN) $(SHLIB) $(GERBIL_EXE)
+
+# ---- Demo binary (with small CLI main) ----
+$(DEMO_BIN): $(OBJ_C)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# Build normal object for the demo; define RDF_DEMO_MAIN to enable main()
+C-source/wrapper.o: C-source/wrapper.c
+	$(CC) $(CFLAGS) -DRDF_DEMO_MAIN -c -o $@ $<
+
+# ---- Shared library for Gerbil FFI ----
+$(SHLIB): $(OBJ_PIC)
+	$(CC) $(DYNLIB_LDFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# PIC object for dynamic library
+C-source/wrapper.pic.o: C-source/wrapper.c
+	$(CC) $(CFLAGS) -fPIC -c -o $@ $<
+
+# ---- Gerbil client (assumes test.ss is valid and calls FFI) ----
+$(GERBIL_EXE): $(GERBIL_SRC) rdfwrap.ss $(SHLIB)
+	$(GXC) -d $(GERBIL_OUT_DIR) -cc-options "$(GERBIL_CFLAGS)" -ld-options "$(GERBIL_LDOPTS)" -exe -o $@ rdfwrap.ss $(GERBIL_SRC)
+
+# ---- Utilities ----
+clean:
+	rm -f $(OBJ_C) $(OBJ_PIC) $(DEMO_BIN) $(SHLIB) $(GERBIL_EXE)
+	rm -rf $(GERBIL_OUT_DIR)
+
+print-flags:
+	@echo "CFLAGS        = $(CFLAGS)"
+	@echo "LDFLAGS       = $(LDFLAGS)"
+	@echo "LDLIBS        = $(LDLIBS)"
+	@echo "GERBIL_CFLAGS = $(GERBIL_CFLAGS)"
+	@echo "GERBIL_LDOPTS = $(GERBIL_LDOPTS)"
+
+.PHONY: all clean print-flags
