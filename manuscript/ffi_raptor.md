@@ -166,18 +166,29 @@ This code exports main and imports the FFI wrapper. Utility helpers include **wr
 
 The test proceeds in two phases: first it calls **raptor-parse-file->ntriples ttl-file** "turtle" and checks the result; then it repeats using "guess" to confirm the parser’s auto-detection path yields identical serialization. After both assertions pass, it deletes the temporary file and prints “All tests passed.” The result is a minimal but effective smoke test verifying the FFI, Raptor’s parsing/serialization, and the contract that both explicit syntax selection and guessing produce stable N-Triples output.
 
-We use a Makefile to build an executable:
+We use a Makefile to build an executable on macOS:
 
 ```makefile
+##### macOS:
 RAPTOR_PREFIX ?= /opt/homebrew/Cellar/raptor/2.0.16
 OPENSSL_PREFIX ?= /opt/homebrew/opt/openssl@3
-
-# Add raptor2 includes and libs; also ensure the correct
-# OpenSSL lib dir is on the link path so -lssl/-lcrypto
-# resolve even if Gerbil was built against a different
-# Homebrew Cellar version.
 CC_OPTS := -I$(RAPTOR_PREFIX)/include/raptor2
 LD_OPTS := -L$(RAPTOR_PREFIX)/lib -lraptor2 -L$(OPENSSL_PREFIX)/lib
+
+build:
+	gxc -cc-options "$(CC_OPTS)" -ld-options "$(LD_OPTS)" ffi.ss
+	gxc -cc-options "$(CC_OPTS)" -ld-options "$(LD_OPTS)" -exe -o test test.ss
+
+clean:
+	rm -f *.c *.scm *.o *.so test
+```
+
+Alternatively, the Makefile for Linux can me run using **make -f Makefile.linux**:
+
+```makefile
+#### Ubuntu Linux
+CC_OPTS += $(shell pkg-config --cflags raptor2)
+LD_OPTS += $(shell pkg-config --libs raptor2)
 
 build:
 	gxc -cc-options "$(CC_OPTS)" -ld-options "$(LD_OPTS)" ffi.ss
