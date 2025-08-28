@@ -11,7 +11,7 @@
   (display default-query) (newline))
 
 (define (main . args)
-  (let* ((prog DEMO_rdfwrap") ; shuld use (car (commandline)) but not available on Linux
+  (let* ((prog DEMO_rdfwrap") ; shuld use (car (command-line)) but not available on Linux
          (path (if (pair? args) (car args) "mini.nt"))
          (rawq (if (and (pair? args) (pair? (cdr args))) (cadr args) default-query))
          (query (if (string-prefix? "@" rawq)
