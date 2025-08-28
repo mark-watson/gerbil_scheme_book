@@ -2,9 +2,11 @@
 
 Ollama is a powerful and user-friendly tool designed to simplify the process of running large language models (LLMs) locally on personal hardware. In a landscape often dominated by cloud-based APIs, Ollama democratizes access to advanced AI by providing a simple command-line interface that bundles model weights, configurations, and a tailored execution environment into a single, easy-to-install package. It allows developers, researchers, and enthusiasts to download and interact with a wide range of popular open-source models, such as Llama 3, Mistral, and Phi-3, with just a single command. Beyond its interactive chat functionality, Ollama also exposes a local REST API, enabling the seamless integration of these locally-run models into custom applications without the latency, cost, or privacy concerns associated with remote services. This focus on accessibility and local deployment makes it an indispensable tool for offline development, rapid prototyping, and leveraging the power of modern LLMs while maintaining full control over data and infrastructure.
 
-TBD
 
 ## Example Code
+
+
+This next program in file **gerbil_scheme_book/source_code/ollama/ollama.ss** provides a practical demonstration of network programming and data handling in Gerbil Scheme by creating a simple client for the Ollama API. Ollama is a fantastic tool that allows you to run powerful large language models, like Llama 3, Mistral, and Gemma, directly on your own machine. Our **ollama** function will encapsulate the entire process of communicating with a locally running Ollama instance. It will take a text prompt as input, construct the necessary JSON payload specifying the model and prompt, send it to the Ollama server's /api/generate endpoint via an HTTP POST request, and then carefully parse the server's JSON response. The goal is to extract and return only the generated text, while also including basic error handling to gracefully manage any non-successful API responses, making for a robust and reusable utility.
 
 {lang="scheme", linenos=off}
 ```
@@ -31,6 +33,10 @@ TBD
 
 ;;  (ollama "why is the sky blue? Be very concise.")
 ```
+
+The **ollama** function begins by using a **let*** block to define the necessary components for the API request: the server endpoint, the required HTTP headers, and the request body-data. The body is first constructed as a Gerbil hash-table, which is the natural way to represent a JSON object, and then serialized into a JSON string using **json-object->string**. Note that the "stream" parameter is explicitly set to #f to ensure we receive the complete response at once rather than as a series of events. The core of the function is the **http-post** call, which performs the actual network request.
+
+After the request is made, the code immediately checks the status of the response. A status code of 200 indicates success, prompting the code to parse the JSON body using **request-json** and extract the generated text from the 'response field of the resulting hash-table. If the request fails for any reason, a descriptive error is raised, including the HTTP status and response body, which is crucial for debugging. The function's design, with its optional **model:** keyword argument, makes it trivial to switch between different models you have downloaded through Ollama, providing a flexible interface for interacting with local large language models.
 
 ## Install Ollama and Pull a Model to Experiment With
 
