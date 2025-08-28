@@ -34,7 +34,7 @@ data.n3		data.ttl	mini.nt		rdfwrap.ss	test.ss
 wrapper.c
 ```
 
-The following Makefile builds the project:
+The following **Makefile** builds the project for macOS:
 
 ```makefile
 # Makefile — DEMO binary + FFI library + Gerbil client
@@ -144,7 +144,92 @@ print-flags:
 .PHONY: all clean print-flags
 ```
 
-TBD
+Alternatively, you can run **make -f Makefile.linux** to build for Linux:
+
+```makefile
+# Makefile for Ubuntu Linux — DEMO binary + FFI library + Gerbil client
+
+# ---- Tools ----
+CC         ?= cc
+PKG_CONFIG ?= pkg-config
+GXC        ?= gxc
+
+# ---- Sources / Outputs ----
+SRC_C      := C-source/wrapper.c
+OBJ_C      := $(SRC_C:.c=.o)
+OBJ_PIC    := C-source/wrapper.pic.o
+
+DEMO_BIN   := DEMO_rdfwrap
+SHLIB      := libRDFWrap.so          # Linux shared library
+GERBIL_EXE := TEST_client
+GERBIL_SRC := test.ss
+
+# ---- Library Flags (using pkg-config) ----
+# Use pkg-config to get compiler and linker flags for dependencies.
+# This is the standard way on Linux and avoids hardcoded paths.
+PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags sord-0 serd-0 rasqal raptor2)
+PKG_LDLIBS := $(shell $(PKG_CONFIG) --libs   sord-0 serd-0 rasqal raptor2)
+
+# Extra libs sometimes needed by transitive deps or gerbil toolchain
+EXTRA_LDLIBS := -lssl -lcrypto -lz -lm
+
+# ---- Final flags ----
+CFLAGS  ?= -Wall -O2
+CFLAGS  += $(PKG_CFLAGS)
+
+LDLIBS  += $(PKG_LDLIBS) $(EXTRA_LDLIBS)
+LDFLAGS +=
+
+# Linker flags for the shared library on Linux
+DYNLIB_LDFLAGS := -shared -Wl,-soname,$(SHLIB)
+
+# Gerbil compile/link flags
+GERBIL_CFLAGS := $(CFLAGS)
+# Use $$ORIGIN for the rpath on Linux. This tells the executable to look for
+# the shared library in its own directory. The '$$' escapes the '$' for Make.
+GERBIL_LDOPTS := -L$(CURDIR) -lRDFWrap $(LDLIBS) -Wl,-rpath,'$$ORIGIN'
+
+# Where gxc writes intermediate artifacts; keep it inside workspace
+GERBIL_OUT_DIR ?= .gerbil_build
+
+# ---- Default target ----
+all: $(DEMO_BIN) $(SHLIB) $(GERBIL_EXE)
+
+# ---- Demo binary (with small CLI main) ----
+$(DEMO_BIN): $(OBJ_C)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# Build normal object for the demo; define RDF_DEMO_MAIN to enable main()
+C-source/wrapper.o: C-source/wrapper.c
+	$(CC) $(CFLAGS) -DRDF_DEMO_MAIN -c -o $@ $<
+
+# ---- Shared library for Gerbil FFI ----
+$(SHLIB): $(OBJ_PIC)
+	$(CC) $(DYNLIB_LDFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# PIC object for dynamic library
+C-source/wrapper.pic.o: C-source/wrapper.c
+	$(CC) $(CFLAGS) -fPIC -c -o $@ $<
+
+# ---- Gerbil client (assumes test.ss is valid and calls FFI) ----
+$(GERBIL_EXE): $(GERBIL_SRC) rdfwrap.ss $(SHLIB)
+	$(GXC) -d $(GERBIL_OUT_DIR) -cc-options "$(GERBIL_CFLAGS)" -ld-options "$(GERBIL_LDOPTS)" -exe -o $@ rdfwrap.ss $(GERBIL_SRC)
+
+# ---- Utilities ----
+clean:
+	rm -f $(OBJ_C) $(OBJ_PIC) $(DEMO_BIN) $(SHLIB) $(GERBIL_EXE)
+	rm -rf $(GERBIL_OUT_DIR)
+
+print-flags:
+	@echo "CFLAGS        = $(CFLAGS)"
+	@echo "LDFLAGS       = $(LDFLAGS)"
+	@echo "LDLIBS        = $(LDLIBS)"
+	@echo "GERBIL_CFLAGS = $(GERBIL_CFLAGS)"
+	@echo "GERBIL_LDOPTS = $(GERBIL_LDOPTS)"
+
+.PHONY: all clean print-flags
+```
+
 
 ## Implementation of the C Language Wrapper
 
@@ -371,3 +456,50 @@ A key feature of the script is its ability to read the SPARQL query from two dif
 
 After parsing the inputs, the script interfaces directly with the C wrapper's functions. It first calls rdf-init to load the specified RDF data file into the in-memory model. If initialization is successful, it passes the prepared SPARQL query to the rdf-query function, which executes the query and returns the results as a single string. The script then prints this result string to standard output. Finally, to ensure proper resource management and prevent memory leaks, it calls rdf-free to clean up the C library's allocated resources before the program terminates.
 
+## Example Output
+
+Test the C library code:
+
+```console
+$ ./DEMO_rdfwrap mini.nt "SELECT ?s ?p ?o WHERE { ?s ?p ?o }"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/title>	"AI Breakthrough Announced"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/creator>	<http://example.org/alice>
+<http://example.org/alice>	<http://xmlns.com/foaf/0.1/name>	"Alice Smith"
+
+$ ./DEMO_rdfwrap data.ttl "SELECT ?s ?p ?o WHERE { ?s ?p ?o }"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/title>	"AI Breakthrough Announced"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/creator>	<http://example.org/alice>
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/date>	"2025-08-27"
+<http://example.org/article2>	<http://purl.org/dc/elements/1.1/title>	"Local Team Wins Championship"
+<http://example.org/article2>	<http://purl.org/dc/elements/1.1/creator>	<http://example.org/bob>
+<http://example.org/alice>	<http://xmlns.com/foaf/0.1/name>	"Alice Smith"
+<http://example.org/bob>	<http://xmlns.com/foaf/0.1/name>	"Bob Jones"
+```
+
+Test the Gerbil Scheme client code:
+
+```console
+# Usage: ./TEST_client [data-file [query]]
+# Defaults to data-file=mini.nt and a simple SELECT * pattern
+# You can load the query from a file by prefixing with '@' (e.g., @query.sparql)
+$ ./TEST_client
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/title>	"AI Breakthrough Announced"
+<http://example.org/article1>	<http://purl.org/dc/elements/1.1/creator>	<http://example.org/alice>
+<http://example.org/alice>	<http://xmlns.com/foaf/0.1/name>	"Alice Smith"
+
+# Specify a data file and a custom query
+$ ./TEST_client data.ttl "SELECT ?s WHERE { ?s ?p ?o } LIMIT 5"
+<http://example.org/article1>
+<http://example.org/article2>
+<http://example.org/alice>
+<http://example.org/bob>
+
+# Or read the query from a file
+$ cat > q.sparql <<'Q'
+SELECT ?s WHERE { ?s ?p ?o } LIMIT 3
+Q
+$ ./TEST_client data.ttl @q.sparql
+<http://example.org/article1>
+<http://example.org/article2>
+<http://example.org/alice>
+```
