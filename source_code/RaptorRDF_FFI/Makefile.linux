@@ -1,0 +1,10 @@
+#### Ubuntu Linux
+CC_OPTS += $(shell pkg-config --cflags raptor2)
+LD_OPTS += $(shell pkg-config --libs raptor2)
+
+build:
+	gxc -cc-options "$(CC_OPTS)" -ld-options "$(LD_OPTS)" ffi.ss
+	gxc -cc-options "$(CC_OPTS)" -ld-options "$(LD_OPTS)" -exe -o test test.ss
+
+clean:
+	rm -f *.c *.scm *.o *.so test
