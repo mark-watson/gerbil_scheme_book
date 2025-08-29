@@ -118,4 +118,10 @@
 ;; (parse (list->vector '("the" "cat" "ran")))
 ;; (parse (words-from-string "banking in Europe is a good business and a liberty"))
 
+;; Gerbil module imports
+(export parts-of-speech generate-lex-hash)
+(import :kbtm/utils)
 
+;; Load lexicon data at runtime to avoid static module coupling
+(define lex-hash #f)
+(load "generated-code/lexdata.ss")

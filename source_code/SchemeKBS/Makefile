@@ -1,26 +1,35 @@
-clean:
-	rm -f *~
-	rm -f */*~
-	rm -f \#*
-	rm -f */\#*
-	rm -f *.c
-	rm -f generated-code/*.c
-	rm -f a.out
-	rm -f kbtm
+all: build
 
-app:
-	gsc -c data/stop-words.ss
-	gsc -c utils.ss
-	gsc -c fasttag.ss
-	gsc -c category.ss
-	gsc -c levenshtein.ss
-	gsc -c json.ss
-	gsc -c generated-code/cat-data-tables.ss
-	gsc -c generated-code/lexdata.ss
-	gsc -c proper-names.ss
-	gsc -c summarize.ss
-	gsc -c key-phrases.ss
-	gsc -c main.ss
-	gsc -c testapp.ss
-	gsc -link category.c key-phrases.c main.c summarize.c data/stop-words.c utils.c fasttag.c levenshtein.c json.c proper-names.c generated-code/cat-data-tables.c  generated-code/lexdata.c   testapp.c 
-	gcc -I/Library/Gambit-C/current/include -L/Library/Gambit-C/current/lib category.c key-phrases.c main.c summarize.c data/stop-words.c utils.c fasttag.c levenshtein.c json.c proper-names.c generated-code/cat-data-tables.c generated-code/lexdata.c   testapp.c testapp_.c -lgambc -o kbtm
+build:
+	# Redirect HOME so gxpkg installs into project-local .gerbil
+	HOME=$(CURDIR) gxi build.ss
+
+.PHONY: test test-fast
+
+test: build
+	@echo "Running smoke test with testapp on climate_g8.txt..."
+	@mkdir -p .gerbil
+	@.gerbil/bin/testapp -i data/testdata/climate_g8.txt -o .gerbil/test-output.json
+	@echo "Wrote .gerbil/test-output.json"
+	@/bin/echo -n "Preview: " && head -c 300 .gerbil/test-output.json || true
+
+# Interpreter-based run; useful if static exe build is problematic
+test-fast: compile-mods
+	@echo "Running interpreter smoke test (gxi) on climate_g8.txt..."
+	@mkdir -p .gerbil
+	@HOME=$(CURDIR) gxi testapp.ss -- -i data/testdata/climate_g8.txt -o .gerbil/test-output.json
+	@echo "Wrote .gerbil/test-output.json"
+	@/bin/echo -n "Preview: " && head -c 300 .gerbil/test-output.json || true
+
+
+clean:
+	@echo "Cleaning project build artifacts..."
+	@rm -rf .gerbil
+	@rm -f kbtm testapp a.out
+	@find . -maxdepth 1 -type f \( -name "*.o*" -o -name "*.ssxi" -o -name "*.ssi" \) -delete
+.PHONY: compile-mods
+compile-mods:
+	@echo "Compiling modules with gxc into project-local .gerbil..."
+	@HOME=$(CURDIR) gxc utils.ss fasttag.ss category.ss proper-names.ss \
+	  data/stop-words.ss generated-code/lexdata.ss generated-code/cat-data-tables.ss \
+	  main.ss testapp.ss

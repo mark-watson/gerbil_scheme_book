@@ -1,4 +1,61 @@
-(import :std/text/json)
+(import :kbtm/main)
+
+;; minimal JSON writer for our specific output
+(define (json-escape s)
+  (list->string
+   (apply append
+          (map (lambda (ch)
+                 (cond
+                  ((char=? ch #\") '(#\\ #\"))
+                  ((char=? ch #\\) '(#\\ #\\))
+                  ((char=? ch #\newline) '(#\\ #\n))
+                  (else (list ch))))
+               (string->list s)))))
+
+(define (write-json-string s)
+  (display "\"")
+  (display (json-escape s))
+  (display "\""))
+
+(define (write-json-string-list lst)
+  (display "[")
+  (let loop ((xs lst) (first #t))
+    (if (pair? xs)
+        (begin
+          (if (not first) (display ","))
+          (write-json-string (car xs))
+          (loop (cdr xs) #f))))
+  (display "]"))
+
+(define (write-json-categories cats)
+  ;; cats: list of ((name score) ...)
+  (display "[")
+  (let loop ((xs cats) (first #t))
+    (if (pair? xs)
+        (let* ((pair (car xs))
+               (name (car pair))
+               (score (cadr pair)))
+          (if (not first) (display ","))
+          (display "[")
+          (write-json-string name)
+          (display ",")
+          (display score)
+          (display "]")
+          (loop (cdr xs) #f))))
+  (display "]"))
+
+(define (json-write ret)
+  ;; ret is a table with fixed keys
+  (display "{")
+  (display "\"words\":")
+  (write-json-string-list (table-ref ret "words" '()))
+  (display ",\"tags\":")
+  (write-json-string-list (table-ref ret "tags" '()))
+  (display ",\"key-phrases\":")
+  (write-json-string-list (table-ref ret "key-phrases" '()))
+  (display ",\"categories\":")
+  (write-json-categories (table-ref ret "categories" '()))
+  (display "}") )
 
 (define (print-help)
   (display "KBtextmaster (native) command line arguments:")

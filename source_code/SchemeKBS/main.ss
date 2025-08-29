@@ -1,5 +1,13 @@
 ;;;;; Main file for the entity semantic information extraction product
 
+(import :std/iter)
+(import :kbtm/utils)
+(import :kbtm/fasttag)
+(import :kbtm/category)
+(import :kbtm/proper-names)
+
+(export process-file process-string)
+
 (define (process-file fpath)
   (process-string (file->string fpath)))
 
@@ -75,4 +83,3 @@
     (list words tags key-phrase-list (list (car category-seq) (cadr category-seq)) summary-words proper-name-list place-list)))
 
 ;;(process-file "data/testdata/climate_g8.txt")
-

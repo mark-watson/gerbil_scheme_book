@@ -4,8 +4,19 @@
 ;;;;;;;;;;;;;; string functions
 ;;;;;;;;;;;;;; sort
 
+(export file->string process-one-word-per-line
+        string->lower-case-string string-downcase
+        substring? string-suffix? string-prefix? %string-prefix-length
+        contraction-hash noise-word? no-noise
+        split-seq-if words-from-string
+        sorted? merge merge! sort! sort)
+
 (import :std/iter) ;; loop utilities
 (import :std/misc/ports)
+
+;; Load stop words at runtime to avoid static module coupling
+(define noise-word-hash (make-table))
+(load "data/stop-words.ss")
 
 ;;;;;;;;; macros:
 
@@ -146,7 +157,7 @@
 ;;      this now returns a vector:  make this more efficient!!!  TBD!!
 
 (define (words-from-string str)
-  (list->vector (string-split str #\space))) ;; note: this used to handle punctuation, etc.
+  (list->vector (split-seq-if (lambda (ch) (char=? ch #\space)) str))) ;; simple whitespace split
 
 
 ;; test:  (words-from-string "The cat can't run, slowly in Oct. . . . . The U.S.A. economy is strong. Is it OK?")
@@ -288,5 +299,3 @@
   (if (vector? seq)
       (list->vector (sort! (vector->list seq) less?))
       (sort! (append seq '()) less?)))
-
-

@@ -1,3 +1,5 @@
+(export categoryHashtables categoryNames)
+
 (define categoryHashtables '())
 (define categoryNames '())
 (define *h* #f)

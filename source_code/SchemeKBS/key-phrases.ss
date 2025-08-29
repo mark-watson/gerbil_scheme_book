@@ -1,5 +1,8 @@
 ;;; Find key phrases in text
 
+(
+ import :std/iter
+ import :kbtm/utils)
 
 (define (key-phrases input-file-path)
   (let ((words (words-from-string (file->string input-file-path) '("\"" "." "-" "--")))

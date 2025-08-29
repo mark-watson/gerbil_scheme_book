@@ -2,6 +2,12 @@
 
 ;;; Human names:
 
+(import :std/iter)
+(import :kbtm/utils)
+(import :kbtm/fasttag)
+
+(export find-human-names load-name-data string-tokenize string-starts-with)
+
 (define *first-name-hash* (make-table size: 10000))
 (define *last-name-hash*  (make-table size: 140000))
 
@@ -161,4 +167,3 @@
   (process-one-word-per-line 
    "data/human_names/names.last"
    (lambda (word) (table-set! *last-name-hash* word #t))))
-
