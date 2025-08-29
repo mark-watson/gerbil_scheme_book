@@ -96,6 +96,6 @@ done
 >
 ```
 
-A few comments: in the second example I added "Just output the bash script and nothing else." to the end of the prompt. Without this, the model will generate a 100 lines of design notes, instructions how to make the bash script executable, etc. I didn't want that, just the bash script.
+A few comments: In the second example I added "Just output the bash script and nothing else." to the end of the prompt. Without this, the model will generate a 100 lines of design notes, instructions how to make the bash script executable, etc. I didn't want that, just the bash script.
 
 In the third example, I used the same prompt but used **displayln** to print the result in a more useful format.

@@ -1,6 +1,6 @@
 # Preface
 
-I have used Lisp languages since the late 1970s, Common Lisp and Clojure professionally and other Lisp languages, mostly various Scheme implementations, for writing utilities, network programming, and various AI experiments. This book is specifically about effectively using Gerbil Scheme for writing software to solve practical problems.
+I have used Lisp languages since the late 1970s, Common Lisp and Clojure professionally and other Lisp languages, mostly various Scheme implementations for writing utilities, network programming, and various AI experiments. This book is specifically about effectively using Gerbil Scheme for writing software to solve practical problems.
 
 Both the source code examples and the manuscript files for this book are maintained in a single GitHub repository: [https://github.com/mark-watson/gerbil_scheme_book](https://github.com/mark-watson/gerbil_scheme_book). I recommend that you keep a local copy:
 
@@ -36,7 +36,7 @@ You will find useful tutorial examples for using Gerbil Scheme in the sub-direct
 
 ### Introduction: Gerbil as a Systems Language
 
-While Gerbil Scheme is another dialect in the Lisp family, it is like Racket Scheme in that it is "opinionated", reflecting the Gerbil developers'  style an philosophy.
+While Gerbil Scheme is another dialect in the Lisp family, it is like Racket Scheme in that it is "opinionated", reflecting the Gerbil developers'  style and philosophy.
 
 Gerbil is built on Gambit Scheme, a high-performance, retargetable compiler.  Gerbil inherits a legacy of speed and portability while introducing a state-of-the-art module and object system inspired by Racket. The result is a language engineered for creating efficient, concurrent, and robust long-running applications, positioning it as a powerful tool for tasks ranging from web services to distributed systems.
 
