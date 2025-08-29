@@ -1,9 +1,1 @@
-preface.md
-setup.md
-gemini.md
-ollama.md
-openai.md
-wikidata.md
-nlp.md
-ffi_raptor.md
-ffi_wrapper.md
+groq.md

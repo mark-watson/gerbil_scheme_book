@@ -3,6 +3,7 @@ setup.md
 gemini.md
 ollama.md
 openai.md
+groq.md
 wikidata.md
 nlp.md
 ffi_raptor.md
