@@ -4,10 +4,8 @@
 
 (import :kbtm/utils)
 
-;; Load category data at runtime to avoid static module coupling
-(define categoryHashtables '())
-(define categoryNames '())
-(load "generated-code/cat-data-tables.ss")
+;; Load category data at compile time to avoid runtime file IO
+(include "generated-code/cat-data-tables.ss")
 
 ;;
 ;; get the category for words in a string

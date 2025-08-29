@@ -6,10 +6,11 @@ build:
 
 .PHONY: test test-fast
 
-test: build
-	@echo "Running smoke test with testapp on climate_g8.txt..."
+test: compile-mods
+	@echo "Running smoke test (gxi) on climate_g8.txt..."
 	@mkdir -p .gerbil
-	@.gerbil/bin/testapp -i data/testdata/climate_g8.txt -o .gerbil/test-output.json
+	@rm -rf .gerbil/test-output.json
+	@HOME=$(CURDIR) gxi testapp.ss -- -i data/testdata/climate_g8.txt -o .gerbil/test-output.json
 	@echo "Wrote .gerbil/test-output.json"
 	@/bin/echo -n "Preview: " && head -c 300 .gerbil/test-output.json || true
 

@@ -14,9 +14,8 @@
 (import :std/iter) ;; loop utilities
 (import :std/misc/ports)
 
-;; Load stop words at runtime to avoid static module coupling
-(define noise-word-hash (make-table))
-(load "data/stop-words.ss")
+;; Load stop words at compile-time from included data
+(include "data/stop-words.ss")
 
 ;;;;;;;;; macros:
 

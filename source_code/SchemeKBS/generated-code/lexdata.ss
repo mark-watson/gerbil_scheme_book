@@ -1,5 +1,3 @@
-(export lex-hash)
-
 (define data123 '(
  ("!" . "!")
  ("#" . "#")

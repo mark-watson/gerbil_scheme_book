@@ -7,5 +7,4 @@
 ;; (like data/stop-words.ss, category.ss, etc.) by following
 ;; the 'import' statements from the main and testapp files.
 (defbuild-script
-  '((script: "testapp" bin: "testapp")
-    (script: "main" bin: "kbtm")))
+  '((exe: "testapp" bin: "testapp")))

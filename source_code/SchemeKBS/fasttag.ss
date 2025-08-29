@@ -122,6 +122,5 @@
 (export parts-of-speech generate-lex-hash)
 (import :kbtm/utils)
 
-;; Load lexicon data at runtime to avoid static module coupling
-(define lex-hash #f)
-(load "generated-code/lexdata.ss")
+;; Load lexicon data at compile time to avoid runtime file IO
+(include "generated-code/lexdata.ss")
