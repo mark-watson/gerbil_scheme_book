@@ -8,7 +8,7 @@ The practical implications of Groq's technological innovation are multifaceted, 
 
 ## Structure of Project and Build Instructions
 
-This project is stored in the directory **gerbil_scheme_book/source_code/groq_llm_inference**. Tere is one common utility file **groq_inference.ss** and currently two very short example scripts that use this utility:
+This project is stored in the directory **gerbil_scheme_book/source_code/groq_llm_inference**. There is one common utility file **groq_inference.ss** and currently two very short example scripts that use this utility:
 
 - kimi2.ss - Uses Moonshot AI's Kimi2 model (MOE 1 trillion paramters, with 32B active).
 - gpt-oss-120b.ss - Uses OpenAI's open source model gpt-oss-120b.
@@ -110,7 +110,7 @@ Here we construct a practical, reusable Gerbil Scheme function for interacting w
             body: (request-text response)))))))
 ```
 
-he implementation begins by defining the **groq_inference** function, which accepts a model and a prompt, along with an optional keyword argument for a system message. Its first action is a crucial security and configuration check: it attempts to fetch the GROQ_API_KEY from the environment variables, raising an immediate error if it's not found. The core of the function then uses a let* block to sequentially build the components of the HTTP request. It constructs the authorization headers and then assembles the JSON body using a combination of quasiquotation and the **list->hash-table** procedure to create the nested structure required by the API. This body is then serialized into a JSON string, and finally, the http-post function is called with the endpoint, headers, and data to execute the network request.
+The implementation begins by defining the **groq_inference** function, which accepts a model and a prompt, along with an optional keyword argument for a system message. Its first action is a crucial security and configuration check: it attempts to fetch the GROQ_API_KEY from the environment variables, raising an immediate error if it's not found. The core of the function then uses a let* block to sequentially build the components of the HTTP request. It constructs the authorization headers and then assembles the JSON body using a combination of quasiquotation and the **list->hash-table** procedure to create the nested structure required by the API. This body is then serialized into a JSON string, and finally, the http-post function is called with the endpoint, headers, and data to execute the network request.
 
 Upon receiving a response, the function demonstrates robust result processing and error handling. It first checks if the HTTP status code is 200 (OK), indicating a successful request. If it is, a series of **let*** bindings are used to safely parse the JSON response and navigate the nested data structure to extract the final content string from **response['choices'][0]['message']['content']**, with checks at each step to prevent errors on an unexpected response format. If the content is successfully extracted, it is returned as the result of the function. However, if the HTTP status is anything other than 200, the function enters its error-handling branch, raising a descriptive error that includes the failing status code and the raw text body of the response, providing valuable debugging information to the caller.
 
@@ -155,7 +155,7 @@ These two scripts are simple enough to just list without comment:
 ;; (gpt-oss-120b "why is the sky blue? be very concise")
 ```
 
-Running the kimi2 exaple:
+**Running the kimi2 example:**
 
 Note, the utility must be comiled one time: **gxc groq_inference.ss**. The compiled library by default will be in the directory **~/.gerbil/lib/groq/** because we set this project's module name to **groq** in the file **gerbil.pkg**.
 
@@ -176,7 +176,7 @@ Counter-arguments / alternatives
 > 
 ```
 
-Running the gpt-oss-120b example:
+**Running the gpt-oss-120b example:**
 
 ```console
 $ gxi -l gpt-oss-120b.ss
