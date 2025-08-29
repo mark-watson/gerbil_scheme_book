@@ -18,7 +18,7 @@ This is achieved by temporarily setting the HOME environment variable to the cur
 
     HOME=$(CURDIR) gxi ...
 
-This approach ensures that the project is self-contained and builds are reproducible, without interfering with the user's global Gerbil installation.
+This approach ensures that the project is self-contained and builds are reproducible, without interfering with your global Gerbil installation.
 
 ```makefile
 all: build
@@ -190,7 +190,7 @@ A notable feature of this code is its self-contained approach to JSON serializat
 
 ## Other Source Files
 
-We will not discuss the follwing code files:
+We will not discuss the following code files:
 
 - fasttag.ss - part of speech tagger.
 - place-names.ss - identify place names in text.
