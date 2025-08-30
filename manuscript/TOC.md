@@ -10,5 +10,6 @@
 - [Chapter 7: Code for Natural Language Processing (NLP)](nlp.md)
 - [Chapter 8: Gerbil Scheme FFI Example Using the C Language Raptor RDF Library](ffi_raptor.md)
 - [Chapter 9: Complete FFI Example: C Language Wrapper for Rasqal SPARQL Library and Sord RDF Datastore Library](ffi_wrapper.md)
+- [CHapter 10: Writing Command Line Utilities"](command_line.md)
 
 ### This book is a work in progress
