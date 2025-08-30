@@ -2,6 +2,8 @@
 
 The Google Gemini API provides developers with access to Google's state-of-the-art family of Gemini Large Language Models (LLMs), representing a significant leap forward in multimodal artificial intelligence. Unlike earlier models that primarily processed text, the Gemini series—comprising models like the highly capable Gemini Ultra, the versatile Gemini Pro, and the efficient Gemini Nano—was designed from the ground up to seamlessly understand, operate across, and combine different types of information, including text, code, images, audio, and video. This native multimodality allows for the development of sophisticated applications that can reason about complex inputs, such as analyzing the steps in a video, interpreting charts and diagrams within a document, or generating creative text based on a visual prompt. The API offers a streamlined and powerful interface, enabling developers to integrate these advanced reasoning and generation capabilities into their own software, pushing the boundaries of what's possible in domains ranging from data analysis and content creation to building the next generation of intelligent, context-aware user experiences.
 
+Here you will learn how to send prompts to the Google Gemini AI models. For information on creating effective prompts please read my blog article [Notes on effectively using AI](https://mark-watson.blogspot.com/2025/08/notes-on-effectively-using-ai.html).
+
 
 ## Example Code
 
