@@ -6,4 +6,7 @@ Build:
 
 Run:
 
-    .gerbil/bin/command_line_utilities --help 
+    .gerbil/bin/command_line_utilities --help
+    .gerbil/bin/command_line_utilities pwd
+    .gerbil/bin/command_line_utilities ls
+    

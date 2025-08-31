@@ -2,27 +2,46 @@
 (import :std/error
         :std/sugar
         :std/cli/getopt
+        :std/misc/process
         ./lib)
 (export main)
 
-(def (main . args)
-  (call-with-getopt command_line_utilities-main args
-    program: "command_line_utilities"
-    help: "A one line description of your program"
-    ;; commands/options/flags for your program; see :std/cli/getopt
-    ;; ...
-    ))
+(def (print-usage)
+  (displayln "usage: command_line_utilities [pwd|ls] [--file PATH]"))
 
-(def* command_line_utilities-main
-  ((opt)
-   (command_line_utilities-main/options opt))
-  ((cmd opt)
-   (command_line_utilities-main/command cmd opt)))
+;; copy-file-to-stdout moved to lib.ss
 
-;;; Implement this if your CLI doesn't have commands
-(def (command_line_utilities-main/options opt)
-  (error "Implement me!"))
+(def (cmd-pwd)
+  (displayln (current-directory)))
 
-;;; Implement this if your CLI has commands
-(def (command_line_utilities-main/command cmd opt)
-  (error "Implement me!"))
+(def (cmd-ls)
+  (try
+   (let* ((dir (current-directory))
+          (files (directory-files dir)))
+     (for-each (lambda (f) (displayln f)) files))
+   (catch (e)
+     ;; Fallback to external ls if directory-files isn't available
+     (run-process ["/bin/ls"] stdout-redirection: #f stderr-redirection: #f))))
+
+(def (main . argv)
+  ;; Simple manual parsing to support: pwd | ls | --file PATH
+  (let parse ((rest argv) (file #f) (cmd #f))
+    (cond
+     ((null? rest)
+      (when file (copy-file-to-stdout file))
+      (cond
+       ((eq? cmd 'pwd) (cmd-pwd))
+       ((eq? cmd 'ls) (cmd-ls))
+       ((not file) (print-usage))))
+     (else
+      (let* ((arg (car rest))
+             (more (cdr rest)))
+        (cond
+         ((string=? arg "--file")
+          (if (pair? more)
+              (parse (cdr more) (car more) cmd)
+              (begin (displayln "--file requires a path") (print-usage))))
+         ((string=? arg "pwd") (parse more file 'pwd))
+         ((string=? arg "ls") (parse more file 'ls))
+         (else (displayln (string-append "Unknown argument: " arg))
+               (print-usage))))))))
