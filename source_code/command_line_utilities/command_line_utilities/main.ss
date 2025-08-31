@@ -5,10 +5,6 @@
         ./lib)
 (export main)
 
-;; build manifest; generated during the build
-;; defines version-manifest which you can use for exact versioning
-(include "../manifest.ss")
-
 (def (main . args)
   (call-with-getopt command_line_utilities-main args
     program: "command_line_utilities"

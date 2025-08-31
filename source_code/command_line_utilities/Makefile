@@ -1,18 +1,20 @@
 ARCH := $(shell uname -m)
-DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
-default: linux-static
+
+# Resolve gxpkg from PATH, allow override via `make GXP=/path/to/gxpkg`
+GXP ?= $(shell command -v gxpkg 2>/dev/null)
+ifeq ($(strip $(GXP)),)
+  $(error gxpkg not found in PATH. Install Gerbil or run with GXP=/path/to/gxpkg)
+endif
+
+default: build
+
+build:
+	$(GXP) deps -i
+	$(GXP) build
 
 build-release:
-	/opt/gerbil/bin/gxpkg deps -i
-	/opt/gerbil/bin/gxpkg build --release
-
-linux-static:
-	docker run -it \
-	-e USER=$(USER) \
-	-e GERBIL_PATH=/src/.gerbil \
-	-v $(PWD):/src:z \
-	$(DOCKER_IMAGE) \
-	make -C /src/ build-release
+	$(GXP) deps -i
+	$(GXP) build --release
 
 install:
 	mv .gerbil/bin/command_line_utilities /usr/local/bin/command_line_utilities
