@@ -18,7 +18,7 @@ Here we look at two examples of ways to structure Gerbil Scheme command line app
 
 ## Simple Structure for Command Line Utilities
 
-Let’s take a look at the directory structure and code:
+Let’s take a look at the directory structure and code, then run the example:
 
 ```console
 $ pwd
@@ -37,6 +37,8 @@ Hello, Mark
 $ rm test-tool
 $
 ```
+
+This program (file test-mytool.ss) demonstrates how to construct a complete, albeit simple, command-line utility in Gerbil Scheme. It leverages the powerful **:std/cli/getopt** library to handle argument parsing, a common requirement for such tools. The script is designed to accept two specific command-line options: a mandatory --name option that requires a string value, and an optional boolean flag, --verbose (or its short form -v), which toggles additional output. The program's logic includes robust argument validation, printing a usage message and exiting if the required name is not provided. Upon successful execution, it greets the user by name, optionally printing a "verbose on" message if the corresponding flag was set, showcasing a standard pattern for creating interactive and user-friendly command-line applications.
 
 The example (test tool):
 
@@ -60,4 +62,8 @@ The example (test tool):
     (displayln (format "Hello, ~a\n" name))
     0))
 ```
+
+Let's dissect the code's structure. At the top, we import the necessary libraries: **:std/cli/getopt** for parsing arguments, **:std/cli/print-exit** for our usage message, and :std/format for string interpolation. The usage function is a standard convention for command-line tools, providing help text and exiting with a non-zero status code to indicate an error. The core of the argument parsing logic is defined in the call to getopt, where we create a parser. We define a boolean flag named verbose triggered by either -v or --verbose, and a required option named name which expects a value, processed here by the identity function (meaning, we take the provided string as-is).
+
+The main function orchestrates the program's execution. It receives the command-line arguments as a list in argv and passes them to getopt-parse, which returns a hash table of options. We then use hash-get to extract the values associated with the 'name and 'verbose symbols. The logic then proceeds with essential validation using unless to ensure the name option was provided, calling usage if it wasn't. The when form conditionally prints the verbose message. Finally, the program prints its greeting using format and displayln, and returns 0, the conventional exit code for successful completion.
 
