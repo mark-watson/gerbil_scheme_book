@@ -38,7 +38,7 @@ $ rm test-tool
 $
 ```
 
-This program (file test-mytool.ss) demonstrates how to construct a complete, albeit simple, command-line utility in Gerbil Scheme. It leverages the powerful **:std/cli/getopt** library to handle argument parsing, a common requirement for such tools. The script is designed to accept two specific command-line options: a mandatory --name option that requires a string value, and an optional boolean flag, --verbose (or its short form -v), which toggles additional output. The program's logic includes robust argument validation, printing a usage message and exiting if the required name is not provided. Upon successful execution, it greets the user by name, optionally printing a "verbose on" message if the corresponding flag was set, showcasing a standard pattern for creating interactive and user-friendly command-line applications.
+This program (file test-mytool.ss) demonstrates how to construct a complete, albeit simple, command-line utility in Gerbil Scheme. It leverages the powerful **:std/cli/getopt** library to handle argument parsing, a common requirement for such tools. The script is designed to accept two specific command-line options: a mandatory **--name** option that requires a string value, and an optional boolean flag, **--verbose** (or its short form **-v**), which toggles additional output. The program's logic includes robust argument validation, printing a usage message and exiting if the required name is not provided. Upon successful execution, it greets the user by name, optionally printing a "verbose on" message if the corresponding flag was set, showcasing a standard pattern for creating interactive and user-friendly command-line applications.
 
 The example (test tool):
 
