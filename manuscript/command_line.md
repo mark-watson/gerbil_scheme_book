@@ -1,24 +1,22 @@
-# Writing Command Line Utilities"
-
-TBD: this chapter is a work in progress
+# Introduction To Writing Command Line Utilities
 
 Writing command line utilities is one of the most rewarding ways to use Gerbil Scheme. A small, fast executable that does one thing well can become a trusted part of your daily workflow, and Gerbil makes this style of development unusually pleasant. With a standard library that includes tools for argument parsing, clean error reporting, and multi-call interfaces, you can focus on the logic of your utility rather than boilerplate. The result is code that feels both expressive and pragmatic: terse enough to fit in a few dozen lines, yet powerful enough to interoperate with your wider toolchain. In a world of ever-growing frameworks and layers of abstraction, a lean Gerbil command line program can be a breath of fresh air.
 
-The Gerbil ecosystem is designed around building and packaging binaries, so distribution is straightforward. A single source file can be compiled into a standalone executable, or for more ambitious projects, you can define a build script that packages multiple tools under one roof. Command line options are handled declaratively with getopt, while helper libraries provide standard exit codes, usage banners, and even multi-call support for utilities that expose multiple subcommands. This structured approach encourages writing utilities that are not only functional but also friendly to end users—programs that behave consistently and provide clear feedback. Once you have mastered this pattern, it becomes natural to treat Gerbil as both a systems language and a scripting tool.
+The Gerbil ecosystem is designed around building and packaging binaries, so distribution is straightforward. A single source file can be compiled into a standalone executable, or for more ambitious projects, you can define a build script that packages multiple tools under one roof. Command line options are handled declaratively with getopt, while helper libraries provide standard exit codes, usage banners, and even multi-call support for utilities that expose multiple subcommands. This structured approach encourages writing utilities that are not only functional but also friendly to end users, programs that behave consistently and provide clear feedback. Once you have mastered this pattern, it becomes natural to treat Gerbil as both a systems language and a scripting tool.
 
-Equally important is the mindset that comes with writing command line utilities. Each utility should feel like a sharp instrument—simple to invoke, with predictable behavior and minimal dependencies. Gerbil lets you achieve this balance while still giving you access to higher-level abstractions when needed, whether you are parsing JSON, making HTTP requests, or wrapping a C library through the foreign functionmain.ss files interface. This chapter will show how to construct utilities from the ground up, starting with a minimal “hello world” executable and building toward more ambitious projects. Along the way, we will explore not just the mechanics of building programs, but also the design philosophy that makes small tools enduringly useful.
+Equally important is the mindset that comes with writing command line utilities. Each utility should feel like a sharp instrument, simple to invoke with predictable behavior and minimal dependencies. Gerbil lets you achieve this balance while still giving you access to higher-level abstractions when needed, whether you are parsing JSON, making HTTP requests, or wrapping a C library through the foreign function interface. This chapter will show how to construct utilities using both a simple structure and then using a more flexible structure by providing minimal “hello world” executable for each approach. We will explore both the mechanics of building programs, and also the design philosophy that makes small tools enduringly useful.
 
 ## Overview of the Command Line Utilities Project Structure and Build System
 
 Here we look at two examples of ways to structure Gerbil Scheme command line applications set up in two project directories:
 
 - command_line_utilities_first_demo_START_HERE - This is the simplest structure and the one I usually use.
-- command_line_utilities - This is a more general purpose structure using a separate lib.ss and main.ss files.
+- command_line_utilities - This is a more general purpose structure using a separate **lib.ss** and **main.ss** source files.
 
 
 ## Simple Structure for Command Line Utilities
 
-Let’s take a look at the directory structure and code, then run the example:
+Let’s take a look at the directory structure and code, then build and run the example:
 
 ```console
 $ pwd
@@ -38,12 +36,12 @@ $ rm test-tool
 $
 ```
 
-This program (file test-mytool.ss) demonstrates how to construct a complete, albeit simple, command-line utility in Gerbil Scheme. It leverages the powerful **:std/cli/getopt** library to handle argument parsing, a common requirement for such tools. The script is designed to accept two specific command-line options: a mandatory **--name** option that requires a string value, and an optional boolean flag, **--verbose** (or its short form **-v**), which toggles additional output. The program's logic includes robust argument validation, printing a usage message and exiting if the required name is not provided. Upon successful execution, it greets the user by name, optionally printing a "verbose on" message if the corresponding flag was set, showcasing a standard pattern for creating interactive and user-friendly command-line applications.
+This program (file **test-mytool.ss**) demonstrates how to construct a complete, albeit simple, command-line utility in Gerbil Scheme. It leverages the powerful **:std/cli/getopt** library to handle argument parsing, a common requirement for such tools. The script is designed to accept two specific command-line options: a mandatory **--name** option that requires a string value, and an optional boolean flag, **--verbose** (or its short form **-v**), which toggles additional output. The program's logic includes robust argument validation, printing a usage message and exiting if the required name is not provided. Upon successful execution, it greets the user by name, optionally printing a "verbose on" message if the corresponding flag was set, showcasing a standard pattern for creating interactive and user-friendly command-line applications.
 
-The example (test tool):
+The example file **test-tool.ss**:
 
 ```scheme
-;; test-mytool.ss
+;; test-tool.ss
 (export main)
 (import :std/cli/getopt :std/cli/print-exit)
 (import :std/format) ;; for 'format'
@@ -105,6 +103,6 @@ Marks-Mac-mini:command_line_utilities $ .gerbil/bin/command_line_utilities pwd
 
 The project's structure and build process are quintessential Gerbil. The gerbil.pkg file simply declares the top-level namespace, markw, for the project. The core of the build logic resides in build.ss, which uses the defbuild-script macro from Gerbil's standard build library. It declares two targets: the first compiles command_line_utilities/lib.ss into a library, and the second, more interestingly, compiles **command_line_utilities/main.ss** into an executable file. The exe: keyword specifies the main source file, while the bin: keyword defines the name of the resulting binary, command_line_utilities, which is placed in the local .gerbil/bin/ directory upon compilation.
 
-## Wrap Up for Writing Comamnd Line Utilities in Gerbil Scheme
+## Wrap Up for Writing Command Line Utilities in Gerbil Scheme
 
 The material here serves as a tutorial for getting started. This book is a work in progress: the next two chapters (currently being written) are additional command line application examples.

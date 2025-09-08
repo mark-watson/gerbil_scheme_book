@@ -1,4 +1,4 @@
-;; test-mytool.ss
+;; test-tool.ss
 (export main)
 (import :std/cli/getopt :std/cli/print-exit)
 (import :std/format) ;; for 'format'
