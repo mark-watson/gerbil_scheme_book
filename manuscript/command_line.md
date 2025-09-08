@@ -67,3 +67,44 @@ Let's dissect the code's structure. At the top, we import the necessary librarie
 
 The main function orchestrates the program's execution. It receives the command-line arguments as a list in argv and passes them to getopt-parse, which returns a hash table of options. We then use hash-get to extract the values associated with the 'name and 'verbose symbols. The logic then proceeds with essential validation using unless to ensure the name option was provided, calling usage if it wasn't. The when form conditionally prints the verbose message. Finally, the program prints its greeting using format and displayln, and returns 0, the conventional exit code for successful completion.
 
+## A More Flexible Structure for Command Line Utilities
+
+This next listing of a Bash shell interaction demonstrates a ccommand-line utility project written in Gerbil Scheme. The terminal session walks through the entire lifecycle of the project, starting with an inspection of the directory structure. You'll see the standard Gerbil project files: a **gerbil.pkg** file to declare the package, a **build.ss** script that defines how to compile the source code, and a **Makefile** for convenience. The source code (to be listed ater) is split into a **main.ss** entrypoint and a **lib.ss** library module. The session continues by showing the compilation process using make, which invokes Gerbil's package manager, **gxpkg**. Finally, we execute the compiled program, testing its command-line argument parsing and its ability to perform a simple action, in this case printing the current working directory, similar to the Unix pwd command. This example serves as a practical template for structuring, building, and running standalone applications with Gerbil.
+
+
+```console
+$ pwd
+/Users/markw/GITHUB/gerbil_scheme_book/source_code/command_line_utilities
+Marks-Mac-mini:command_line_utilities $ ls
+build.ss		gerbil.pkg		manifest.ss
+command_line_utilities	Makefile		README.md
+Marks-Mac-mini:command_line_utilities $ ls -l command_line_utilities 
+total 16
+-rw-r--r--  1 markw  staff   313 Aug 31 12:28 lib.ss
+-rw-r--r--  1 markw  staff  1426 Aug 31 12:31 main.ss
+Marks-Mac-mini:command_line_utilities $ cat gerbil.pkg 
+(package: markw)
+Marks-Mac-mini:command_line_utilities $ cat build.ss 
+#!/usr/bin/env gxi
+;;; -*- Gerbil -*-
+(import :std/build-script)
+
+(defbuild-script
+  '("command_line_utilities/lib"
+    (exe: "command_line_utilities/main" bin: "command_line_utilities")))
+Marks-Mac-mini:command_line_utilities $ make
+/opt/homebrew/bin/gxpkg deps -i
+/opt/homebrew/bin/gxpkg build
+... build in current directory
+Marks-Mac-mini:command_line_utilities $ .gerbil/bin/command_line_utilities --help
+Unknown argument: --help
+usage: command_line_utilities [pwd|ls] [--file PATH]
+Marks-Mac-mini:command_line_utilities $ .gerbil/bin/command_line_utilities pwd
+/Users/markw/GITHUB/gerbil_scheme_book/source_code/command_line_utilities/
+```
+
+The project's structure and build process are quintessential Gerbil. The gerbil.pkg file simply declares the top-level namespace, markw, for the project. The core of the build logic resides in build.ss, which uses the defbuild-script macro from Gerbil's standard build library. It declares two targets: the first compiles command_line_utilities/lib.ss into a library, and the second, more interestingly, compiles **command_line_utilities/main.ss** into an executable file. The exe: keyword specifies the main source file, while the bin: keyword defines the name of the resulting binary, command_line_utilities, which is placed in the local .gerbil/bin/ directory upon compilation.
+
+## Wrap Up for Writing Comamnd Line Utilities in Gerbil Scheme
+
+The material here serves as a tutorial for getting started. This book is a work in progress: the next two chapters (currently being written) are additional command line application examples.
