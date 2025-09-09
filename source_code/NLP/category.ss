@@ -2,7 +2,7 @@
 
 (export get-word-list-category categoryHashtables categoryNames)
 
-(import :kbtm/utils)
+(import :nlp/utils)
 
 ;; Load category data at compile time to avoid runtime file IO
 (include "generated-code/cat-data-tables.ss")

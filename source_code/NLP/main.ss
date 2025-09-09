@@ -1,10 +1,10 @@
 ;;;;; Main file for the entity semantic information extraction product
 
 (import :std/iter)
-(import :kbtm/utils)
-(import :kbtm/fasttag)
-(import :kbtm/category)
-(import :kbtm/proper-names)
+(import :nlp/utils)
+(import :nlp/fasttag)
+(import :nlp/category)
+(import :nlp/proper-names)
 
 (export process-file process-string)
 

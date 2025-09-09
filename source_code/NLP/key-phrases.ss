@@ -2,7 +2,7 @@
 
 (
  import :std/iter
- import :kbtm/utils)
+ import :nlp/utils)
 
 (define (key-phrases input-file-path)
   (let ((words (words-from-string (file->string input-file-path) '("\"" "." "-" "--")))

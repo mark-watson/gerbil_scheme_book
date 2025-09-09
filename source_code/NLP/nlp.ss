@@ -1,4 +1,4 @@
-(import :kbtm/main)
+(import :nlp/main)
 
 (export main)
 

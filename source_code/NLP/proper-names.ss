@@ -3,8 +3,8 @@
 ;;; Human names:
 
 (import :std/iter)
-(import :kbtm/utils)
-(import :kbtm/fasttag)
+(import :nlp/utils)
+(import :nlp/fasttag)
 
 (export find-human-names load-name-data string-tokenize string-starts-with)
 
