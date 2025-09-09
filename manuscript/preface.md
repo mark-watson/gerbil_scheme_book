@@ -92,3 +92,27 @@ This library is the sole tool required to interact with any RESTful API, from th
 For handling the responses from web services we will use the Data Interchange Layer package **:std/text/json**.
 
 Virtually all modern web APIs use JSON as their data interchange format. Gerbil provides a canonical, flexible, and efficient JSON processing library in **:std/text/json**. This module is the essential counterpart to **:std/net/request**, handling the serialization of Scheme data into JSON strings for request bodies and the parsing of JSON responses back into Scheme objects.
+
+## Supressing or Fixing Compilation Warning Messages on macOS
+
+On my macBook I see lts of warnings like:
+
+```
+clang: warning: overriding deployment version from '16.0' to '26.0' [-Woverriding-deployment-version]
+```
+
+This warning typically appears on Apple platforms (macOS, iOS) when the linker is forced to choose a newer deployment target than what some of the input object files were compiled for.
+
+As I write this in September 2025 using macOS Tahoe (version 26.0 Beta), I fix the probem by directly setting:
+
+```
+export MACOSX_DEPLOYMENT_TARGET=15.0
+```
+
+A lower target like 12.0 also works on my computer.
+
+A "solution" that I don't like but works (like a sledgehammer) is to suppress all warnings (don't use this):
+
+```
+export CFLAGS="-Wno-overriding-deployment-version"
+```

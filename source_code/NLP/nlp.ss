@@ -94,7 +94,7 @@
         (print-help))
     0))
 
-;;(write "In testapp....") 
+;;(write "In nlp....") 
 ;;(newline)
 
 ;;(write (process-file "data/testdata/climate_g8.txt")  )
