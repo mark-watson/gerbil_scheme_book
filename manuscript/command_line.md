@@ -103,6 +103,40 @@ Marks-Mac-mini:command_line_utilities $ .gerbil/bin/command_line_utilities pwd
 
 The project's structure and build process are quintessential Gerbil. The gerbil.pkg file simply declares the top-level namespace, markw, for the project. The core of the build logic resides in build.ss, which uses the defbuild-script macro from Gerbil's standard build library. It declares two targets: the first compiles command_line_utilities/lib.ss into a library, and the second, more interestingly, compiles **command_line_utilities/main.ss** into an executable file. The exe: keyword specifies the main source file, while the bin: keyword defines the name of the resulting binary, command_line_utilities, which is placed in the local .gerbil/bin/ directory upon compilation.
 
-## Wrap Up for Writing Command Line Utilities in Gerbil Scheme
+## Wrap Up for Writing Command Line Utilities in Gerbil Scheme and Notes On User Built Libraries
 
 The material here serves as a tutorial for getting started. This book is a work in progress: the next two chapters (currently being written) are additional command line application examples.
+
+### Notes On User Installed Libraries
+
+As you work through the examples in this book, you might ask yourself where compiled files and libraries you create are stored. Take a look in the **/.gerbil/lib** directory on your laptop or server. The **~/.gerbil/lib** directory is the default location for user installed Gerbil Scheme libraries and modules. When you use Gerbil's package manager **gxi -d** or compile your own modules, the compiled artifacts are placed here so the Gerbil runtime and compiler can find them:
+
+```console
+$ pwd
+/Users/markw/.gerbil/lib
+Marks-Mac-mini:lib $ ls
+dbpedia		ffi.o4		ffi~0.o13	ffi~0.o9	stop-words~0.o1
+ffi.o1		ffi.o5		ffi~0.o14	gemini		test.o1
+ffi.o10		ffi.o6		ffi~0.o15	groq		test.o2
+ffi.o11		ffi.o7		ffi~0.o16	hello		test.o3
+ffi.o12		ffi.o8		ffi~0.o2	markw		test.ssi
+ffi.o13		ffi.o9		ffi~0.o3	ollama		test~0.o1
+ffi.o14		ffi.ssi		ffi~0.o4	openai		test~0.o2
+ffi.o15		ffi~0.o1	ffi~0.o5	openai-client	test~0.o3
+ffi.o16		ffi~0.o10	ffi~0.o6	static
+ffi.o2		ffi~0.o11	ffi~0.o7	stop-words.o1
+ffi.o3		ffi~0.o12	ffi~0.o8	stop-words.ssi
+$ ls ollama
+ollama.o1	ollama.o4	ollama.o7	ollama~0.o2	ollama~0.o5
+ollama.o2	ollama.o5	ollama.ssi	ollama~0.o3	ollama~0.o6
+ollama.o3	ollama.o6	ollama~0.o1	ollama~0.o4	ollama~0.o7
+```
+
+The compiled **stop-words** files were created running the examples in the previous NLP chapter. **ollama**, **openai**, etc. were created in the chapters covering Large Language Models (LLMS), etc.
+
+Gerbil maintains a search path for modules. ~/.gerbil/lib is a standard entry in this path, allowing you to (import ...) your own or third-party code without specifying a full path.
+
+Gerbil Scheme is an ahead-of-time (AOT) compiled language that uses Gambit-C as a backend. When you compile a module, it produces several files:
+
+- Object Files (.o*): These are the compiled object code for your Scheme files. The number suffix (e.g., .o1, .o2) often relates to compilation passes or optimization levels. The files with a tilde (~) are typically temporary or backup files from the compilation process.
+- Module Metadata (.ssi): This "Scheme Source Information" file contains metadata about the compiled module, including its dependencies, exported symbols, and macros. This file is essential for the (import) system to work correctly.
