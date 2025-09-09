@@ -1,6 +1,6 @@
 (import :nlp/main)
 
-(export main)
+(export main write-json-string write-json-string-list write-json-categories json-write print-help)
 
 ;; minimal JSON writer for our specific output
 (define (json-escape s)
