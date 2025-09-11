@@ -79,3 +79,23 @@ $ ./test_command_string the dog ran fast. 1 2 3
 the dog ran fast. 1 2 3
 ```
 
+```
+$ gxc -O -exe -o categories categories.ss
+/tmp/gxc.1757623741.458168/nlp__utils.scm:
+/tmp/gxc.1757623741.458168/nlp__fasttag.scm:
+/tmp/gxc.1757623741.458168/nlp__proper-names.scm:
+/tmp/gxc.1757623741.458168/nlp__category.scm:
+/tmp/gxc.1757623741.458168/nlp__main.scm:
+/tmp/gxc.1757623741.458168/nlp__nlp.scm:
+/tmp/gxc.1757623741.458168/categories.scm:
+/Users/markw/GITHUB/gerbil_scheme_book/source_code/command_line_NLP/categories__exe.scm:
+/tmp/gxc.1757623741.458168/nlp__utils.c:
+/tmp/gxc.1757623741.458168/nlp__fasttag.c:
+/tmp/gxc.1757623741.458168/nlp__proper-names.c:
+/tmp/gxc.1757623741.458168/nlp__category.c:
+/tmp/gxc.1757623741.458168/nlp__main.c:
+/tmp/gxc.1757623741.458168/nlp__nlp.c:
+/tmp/gxc.1757623741.458168/categories.c:
+/Users/markw/GITHUB/gerbil_scheme_book/source_code/command_line_NLP/categories__exe.c:
+/Users/markw/GITHUB/gerbil_scheme_book/source_code/command_line_NLP/categories__exe_.c:
+```
