@@ -1,12 +1,13 @@
 #!/usr/bin/env gxi
 
-(import :nlp/main)
-(import :nlp/nlp)
-(import :std/iter)
+(import :nlp/main
+        :nlp/nlp
+        :std/iter
+        :std/misc/ports)  ;; read-all-as-string
 
 (export main)
 
-(def get-categories (lambda (x) (map car (cadddr x)))) ;; helper to extract categories from response
+(def get-categories (lambda (x) (map car (cadddr x))))
 
 (def (remove-txt str substr)
   (if (string-suffix? substr str)
@@ -14,7 +15,10 @@
       str))
 
 (def (main . args)
-  (let ((response
-         (nlp/main#process-string (string-join args " "))))
+  (let* ((input-str (if (null? args)
+                        (read-all-as-string (current-input-port)) ; piped stdin
+                        (string-join args " ")))                  ; argv
+         (response (nlp/main#process-string input-str)))
     (for (s (get-categories response))
-      (displayln (remove-txt s ".txt")))))
+      (displayln (remove-txt s ".txt"))))
+)
