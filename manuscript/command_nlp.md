@@ -1,4 +1,4 @@
-# Command Line Application For NLP
+# Command Line Applications For NLP
 
 We will use both my NLP library from a prior chapter as well as the library for using OpenAI's GPT-5 model to write two command line utilities.
 
