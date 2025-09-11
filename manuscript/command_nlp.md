@@ -8,7 +8,7 @@ This program is a command-line utility written in Gerbil Scheme that acts as a w
 
 The code for this example can be used interpretively using **gxi** or compiled into a static application.
 
-Listing for **categpories.ss**:
+Listing for **categories.ss**:
 
 ```scheme
 #!/usr/bin/env gxi
