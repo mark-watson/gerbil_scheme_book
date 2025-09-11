@@ -71,3 +71,11 @@ Gerbil v0.18.1-78-gc5546da0 on Gambit v4.9.5-124-g6d1a9a9b
 > 
 ```
 
+## Reading all command line arguments as a string
+
+```
+$ gxc -O -exe -o test_command_string test_command_string.ss
+$ ./test_command_string the dog ran fast. 1 2 3
+the dog ran fast. 1 2 3
+```
+
