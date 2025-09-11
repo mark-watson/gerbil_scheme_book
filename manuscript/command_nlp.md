@@ -37,11 +37,11 @@ Listing for **categpories.ss**:
 )
 ```
 
-This command line utility can either use all command line arguments, joined as a string with interleaving spaces, or text can be piped into the utility via **stdin**:
+This command line utility can either use all command line arguments, joined as a string with interleaving spaces, or text can be piped into the utility via **stdin**.
 
-The core logic resides within the main function, which first determines the source of the input text. The (if (null? args) ...) expression is a standard idiom for a command-line tool, allowing it to function seamlessly whether it's receiving data through a pipe or as direct arguments. After capturing the input, the program makes a single call to the external nlp/main#process-string function, which handles the complex task of NLP analysis. The program concludes by iterating through the results with a for loop, processing each identified category and printing it to standard output using displayln.
+The core logic resides within the main function which first determines the source of the input text. The (if (null? args) ...) expression is a standard idiom for a command-line tool, allowing it to function seamlessly whether it's receiving data through a pipe or as direct arguments. After capturing the input, the program makes a single call to the external **nlp/main#process-string** function, which handles the complex task of NLP analysis. The program concludes by iterating through the results with a **for** loop, processing each identified category and printing it to standard output using displayln.
 
-Two small helper functions provide insight into the data the script is handling. The get-categories function uses a combination of cadddr and map car, which tells us that it expects a very specific nested list structure from the NLP library and is designed to extract a list of names from it. This tight coupling to the library's output format is common in wrapper scripts. The second helper, remove-txt, is a simple string manipulation function whose existence implies that the raw category data from the model includes file extensions that are not desired in the final output.
+Two small helper functions provide insight into the data the script is handling. The **get-categories** function uses a combination of cadddr and map car, which tells us that it expects a very specific nested list structure from the NLP library and is designed to extract a list of names from it. This tight coupling to the library's output format is common in wrapper scripts. The second helper function **remove-txt** is a simple string manipulation function whose existence is required because the raw category data from the model includes file extensions that are not desired in the final output.
 
 Here we build an executable and run both the compiled and linked executable and also run interpretivey using **gxi**. We also take input from the command line or via **stdin**:
 
