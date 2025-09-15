@@ -38,12 +38,14 @@ You will find useful tutorial examples for using Gerbil Scheme in the sub-direct
 
 On macOS you can install using a brew formula:
 
+{linenos=off}
 ```
-$ brew install mighty-gerbils/gerbil/gerbil-scheme
+brew install mighty-gerbils/gerbil/gerbil-scheme
 ```
 
 On Linux, in order to get Gerbil's **stdlib** and other libraries I had to build from source:
 
+{linenos=off}
 ```
 git clone https://github.com/mighty-gerbils/gerbil.git
 cd gerbil
