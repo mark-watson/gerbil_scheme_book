@@ -22,19 +22,7 @@ A few key points about the LGPL:
 
 This makes the LGPL very different from the more restrictive GPL and AGPL licenses.
 
-
-## History and Background to the Gerbil Scheme Project
-
-I recommend that you keep a local the GitHub repository for Gerbil Scheme:
-
-{linenos=off}
-```
-git clone https://github.com/mighty-gerbils/gerbil.git
-```
-
-You will find useful tutorial examples for using Gerbil Scheme in the sub-directory **gerbil/src/tutorial**.
-
-### Running Gerbil Scheme on macOS and Linux
+## Running Gerbil Scheme on macOS and Linux
 
 On macOS you can install using a brew formula:
 
@@ -55,6 +43,18 @@ make install
 ```
 
 You will need to change the prefix to suit your systerm and then put the installed **gerbil/bin** on your *PATH*.
+
+
+## History and Background to the Gerbil Scheme Project
+
+I recommend that you keep a local the GitHub repository for Gerbil Scheme:
+
+{linenos=off}
+```
+git clone https://github.com/mighty-gerbils/gerbil.git
+```
+
+You will find useful tutorial examples for using Gerbil Scheme in the sub-directory **gerbil/src/tutorial**.
 
 
 
