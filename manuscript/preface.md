@@ -34,6 +34,28 @@ git clone https://github.com/mighty-gerbils/gerbil.git
 
 You will find useful tutorial examples for using Gerbil Scheme in the sub-directory **gerbil/src/tutorial**.
 
+### Running Gerbil Scheme on macOS and Linux
+
+On macOS you can install using a brew formula:
+
+```
+$ brew install mighty-gerbils/gerbil/gerbil-scheme
+```
+
+On Linux, in order to get Gerbil's **stdlib** and other libraries I had to build from source:
+
+```
+git clone https://github.com/mighty-gerbils/gerbil.git
+cd gerbil
+./configure --prefix=/home/mark/bin/gerbil
+make
+make install
+```
+
+You will need to change the prefix to suit your systerm and then put the installed **gerbil/bin** on your *PATH*.
+
+
+
 ### Introduction: Gerbil as a Systems Language
 
 While Gerbil Scheme is another dialect in the Lisp family, it is like Racket Scheme in that it is "opinionated", reflecting the Gerbil developers'  style and philosophy.
