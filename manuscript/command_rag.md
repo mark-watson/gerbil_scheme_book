@@ -1,4 +1,4 @@
-# Command Line Application For A LLM Based RAG System For Search And Chatting With Local Documents
+# Command Line Application For A LLM Based RAG System For Search And Chating With Local Documents
 
 * work in progress*
 
