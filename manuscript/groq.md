@@ -1,6 +1,6 @@
 # Inexpensive and Fast LLM Inference Using the Groq Service
 
-Dear reader, are you excited about integrating LLMs into your applications but you want to miniize costs?
+Dear reader, are you excited about integrating LLMs into your applications but you want to minimize costs?
 
 Groq is rapidly making a name for itself in the AI community as a cloud-based large language model (LLM) inference provider, distinguished by its revolutionary hardware and remarkably low-cost, high-speed performance. At the heart of Groq's impressive capabilities lies its custom-designed Language Processing Unit (LPU), a departure from the conventional GPUs that have long dominated the AI hardware landscape. Unlike GPUs, which are general-purpose processors, the LPU is an application-specific integrated circuit (ASIC) meticulously engineered for the singular task of executing LLM inference. This specialization allows for a deterministic and streamlined computational process, eliminating many of the bottlenecks inherent in more versatile hardware. The LPU's architecture prioritizes memory bandwidth and minimizes latency, enabling it to process and generate text at a blistering pace, often an order of magnitude faster than its GPU counterparts. This focus on inference, the process of using a trained model to make predictions, positions Groq as a compelling solution for real-time applications where speed is paramount.
 

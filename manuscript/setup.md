@@ -1,16 +1,10 @@
 # Setting Up Gerbil Scheme Development Environment
 
-TBD
-
-## Installation
-
-### Setup for macOS
-
-### Setup for Linux
+We covered the basic installation of Gerbil Scheme for macOS and Linux in the **Preface**. Here cover setting up Emacs to edit Gerbil Scheme.
 
 ## Emacs Configuration
 
-Assuming that you have Emacs installed withthe file **~/.emacs** and the directory **~/.emacs.d/**, copy the following two files into **~/.emacs.d/**:
+Assuming that you have Emacs installed with the file **~/.emacs** and the directory **~/.emacs.d/**, copy the following two files into **~/.emacs.d/**:
 
 - [https://github.com/gambit/gambit/blob/master/misc/gambit.el](https://github.com/gambit/gambit/blob/master/misc/gambit.el)
 - [https://github.com/mighty-gerbils/gerbil/blob/master/etc/gerbil-mode.el](https://github.com/mighty-gerbils/gerbil/blob/master/etc/gerbil-mode.el)

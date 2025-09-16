@@ -94,12 +94,6 @@ Package discovery in Gerbil is facilitated through package directories. These ar
 The primary community-curated package list can be found at **github.com/vyzo/gerbil-directory**. Developers can add additional directories using the 
 **gerbil pkg dir -a <directory-repo-or-url>** command, allowing for the creation of private or specialized package collections.
 
-## This Book's Code Examples as a Specialized Gerbil Package Collection
-
-TBD
-TBD: configure book examples as a community curated package....
-TBD
-
 ## Core Gerbil Toolkits Used in this Book: :std/net/request and :std/text/json
 
 Many examples in this book rely on **:std/net/request** and **:std/text/json** so we will give a brief overview here.
@@ -117,9 +111,9 @@ For handling the responses from web services we will use the Data Interchange La
 
 Virtually all modern web APIs use JSON as their data interchange format. Gerbil provides a canonical, flexible, and efficient JSON processing library in **:std/text/json**. This module is the essential counterpart to **:std/net/request**, handling the serialization of Scheme data into JSON strings for request bodies and the parsing of JSON responses back into Scheme objects.
 
-## Supressing or Fixing Compilation Warning Messages on macOS
+## Suppressing or Fixing Compilation Warning Messages on macOS
 
-On my macBook I see lts of warnings like:
+On my macBook I see lots of warnings like:
 
 ```
 clang: warning: overriding deployment version from '16.0' to '26.0' [-Woverriding-deployment-version]
@@ -127,7 +121,7 @@ clang: warning: overriding deployment version from '16.0' to '26.0' [-Woverridin
 
 This warning typically appears on Apple platforms (macOS, iOS) when the linker is forced to choose a newer deployment target than what some of the input object files were compiled for.
 
-As I write this in September 2025 using macOS Tahoe (version 26.0 Beta), I fix the probem by directly setting:
+As I write this in September 2025 using macOS Tahoe (version 26.0 Beta), I fix the problem by directly setting:
 
 ```
 export MACOSX_DEPLOYMENT_TARGET=15.0
