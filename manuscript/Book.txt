@@ -8,5 +8,6 @@ wikidata.md
 nlp.md
 ffi_raptor.md
 ffi_wrapper.md
+RDF_simple.md
 command_line.md
 command_nlp.md

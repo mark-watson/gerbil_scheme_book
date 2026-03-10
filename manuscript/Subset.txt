@@ -1,12 +1,2 @@
-preface.md
-setup.md
-gemini.md
-ollama.md
-openai.md
-groq.md
-wikidata.md
-nlp.md
-ffi_raptor.md
-ffi_wrapper.md
-command_line.md
-command_nlp.md
+RDF_simple.md
+
