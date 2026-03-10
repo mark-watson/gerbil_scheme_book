@@ -2,7 +2,8 @@
 
 ## Introduction to RDF and the Goal of This Chapter
 
-The Resource Description Framework (RDF) is a W3C standard for representing
+As we saw in an earlier chapter, the  Resource Description Framework (RDF)
+is a W3C standard for representing
 knowledge as a graph of statements.  Every statement is a *triple*: a
 subject, a predicate, and an object.  Taken together, a collection of triples
 forms a directed, labeled graph that can represent almost any kind of
@@ -16,7 +17,9 @@ software, but the core idea — match a set of triple patterns against a store
 and collect the variable bindings — is surprisingly straightforward to
 implement from scratch.
 
-This chapter walks through `RDF.ss`, a self-contained Gerbil Scheme file that
+This chapter walks through an implementation in **RDF.ss**, found in the directory
+**gerbil_scheme_book/source_code/RDF_datastore**,
+that is a self-contained Gerbil Scheme file that
 implements both pieces: a mutable in-memory triple store and a small SPARQL
 evaluator that handles the most commonly used fragment of the language.  The
 goal is not to replace a production-grade triplestore, but to show how cleanly
@@ -27,7 +30,7 @@ We will list the complete implementation later; first we discuss our approach to
 ## Data Model: Triples and the Store
 
 The fundamental unit of RDF is the triple `(subject predicate object)`.  In
-`RDF.ss` each triple is represented as a plain three-element Scheme list.
+**RDF.ss** each triple is represented as a plain three-element Scheme list.
 This is intentionally simple: lists are transparent, easy to inspect in the
 REPL, and require no additional data-structure support from the runtime.
 
@@ -45,19 +48,19 @@ threading the store through every call rather than mutating it in place.
 
 A small helper, `print-all-triples`, dumps the entire store to standard
 output.  It is useful during development and debugging and is used in the
-demo at the bottom of `RDF.ss` to show the loaded data before any queries
+demo at the bottom of **RDF.ss** to show the loaded data before any queries
 are run.
 
 
 ## Parsing SPARQL Queries
 
 Before any matching can happen, the textual query string must be turned into
-a structured representation the evaluator can work with.  `RDF.ss` handles
+a structured representation the evaluator can work with.  **RDF.ss** handles
 this in two stages: tokenization and parsing.
 
 ### Tokenization
 
-The tokenizer in `RDF.ss` walks the query string one character at a time,
+The tokenizer in **RDF.ss** walks the query string one character at a time,
 accumulating characters into a buffer and flushing the buffer into a token
 whenever it encounters whitespace or one of the SPARQL punctuation characters
 `{`, `}`, `.`, `,`, `;`, `(`, and `)`.  Each punctuation character also
@@ -101,7 +104,7 @@ IRIs from case-insensitive keywords.
 
 ## Query Evaluation: Pattern Matching and Joining
 
-The evaluator in `RDF.ss` works in terms of *environments* — association
+The evaluator in **RDF.ss** works in terms of *environments* — association
 lists that map variable name strings to the string values they have been
 bound to.  An empty environment `'()` represents "no bindings yet" and is
 the starting point for every query.
@@ -489,10 +492,10 @@ returned as-is, which contains all variables that were bound during matching.
 
 ### Running with `make`
 
-The `Makefile` provides three targets.  `make run` executes `RDF.ss` directly
+The `Makefile` provides three targets.  `make run` executes **RDF.ss** directly
 under the Gerbil interpreter `gxi` — no compilation step is needed, making
 this the quickest way to see the output.  `make compile` invokes the Gerbil
-compiler `gxc`, which compiles `RDF.ss` into native code and installs the
+compiler `gxc`, which compiles **RDF.ss** into native code and installs the
 resulting module under the package name declared in `gerbil.pkg`
 (`rdf-datastore`).  After compiling, the module can be imported from any
 other Gerbil file as `:rdf-datastore/RDF`.  `make clean` removes all
@@ -500,7 +503,7 @@ compiled artefacts.
 
 ### The Demo at the Bottom of RDF.ss
 
-The bottom of `RDF.ss` contains a self-contained demo wrapped in a `let`
+The bottom of **RDF.ss** contains a self-contained demo wrapped in a `let`
 block so it runs automatically when the file is interpreted.  It builds a
 small social graph with three people (Alice, Bob, and Carol), each with a
 name and an age triple, plus a `foaf:knows` link from Alice to Bob.
@@ -517,20 +520,63 @@ Looking at the output of each query against the data you loaded is the most
 direct way to build intuition for how SPARQL variable binding and joining
 work.
 
+Here is sample program output:
+
+```
+$ make
+gxi RDF.ss
+All triples:
+  <ex:carol> <foaf:age> 35
+  <ex:carol> <foaf:name> "Carol"
+  <ex:bob> <foaf:age> 25
+  <ex:bob> <foaf:name> "Bob"
+  <ex:alice> <foaf:age> 30
+  <ex:alice> <foaf:knows> <ex:bob>
+  <ex:alice> <foaf:name> "Alice"
+
+Query: Who does Alice know?
+  ?friendname: "Bob"  
+
+Query: All names
+  ?s: <ex:carol>  ?name: "Carol"  
+  ?s: <ex:bob>  ?name: "Bob"  
+  ?s: <ex:alice>  ?name: "Alice"  
+
+Query: All ages
+  ?person: <ex:carol>  ?age: 35  
+  ?person: <ex:bob>  ?age: 25  
+  ?person: <ex:alice>  ?age: 30  
+
+Query: SELECT * (all triples)
+  ?o: 35  ?p: <foaf:age>  ?s: <ex:carol>  
+  ?o: "Carol"  ?p: <foaf:name>  ?s: <ex:carol>  
+  ?o: 25  ?p: <foaf:age>  ?s: <ex:bob>  
+  ?o: "Bob"  ?p: <foaf:name>  ?s: <ex:bob>  
+  ?o: 30  ?p: <foaf:age>  ?s: <ex:alice>  
+  ?o: <ex:bob>  ?p: <foaf:knows>  ?s: <ex:alice>  
+  ?o: "Alice"  ?p: <foaf:name>  ?s: <ex:alice>
+
+After removing <ex:bob> <foaf:age> 25:
+Query: All ages after removal
+  ?person: <ex:carol>  ?age: 35
+  ?person: <ex:alice>  ?age: 30
+```
+
+
 ### Package and Module Structure
 
 `gerbil.pkg` declares the package name `rdf-datastore`.  Gerbil uses this to
 determine the import path of compiled modules.  Once compiled, any other
 Gerbil source file can bring the exported names — `make-store`, `add-triple`,
 `remove-triple`, `store-triples`, `sparql-select`, and `print-all-triples` —
-into scope with a single `import` form.  This makes `RDF.ss` usable both as
+into scope with a single `import` form.  This makes **RDF.ss** usable both as
 a standalone runnable demo and as a reusable library component in a larger
 Gerbil project.
 
 
 ## Summary and Further Directions
 
-`RDF.ss` demonstrates that the essential machinery of an RDF store and a
+**RDF.ss** demonstrates that the essential machinery of an RDF store and a
 pattern-matching query engine fits comfortably in a single, readable Gerbil
 Scheme source file with no external dependencies.  The key ideas — triples as
 lists, environments as association lists, query evaluation as a recursive
@@ -558,4 +604,4 @@ Several directions are natural next steps from this foundation:
 
 Each of these extensions is a natural exercise in applied Scheme programming,
 and the clean separation of the data model, the parser, and the evaluator in
-`RDF.ss` makes them straightforward to add without rewriting the whole system.
+**RDF.ss** makes them straightforward to add without rewriting the whole system.
