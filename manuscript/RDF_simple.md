@@ -1,4 +1,4 @@
-# Chapter: A Simple In-Memory RDF Store in Gerbil Scheme
+# A Simple In-Memory RDF Store and Query Language in Gerbil Scheme
 
 ## Introduction to RDF and the Goal of This Chapter
 
