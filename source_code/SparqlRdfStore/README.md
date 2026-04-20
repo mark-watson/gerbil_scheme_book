@@ -1,4 +1,6 @@
+# Complete FFI Example: C Language Wrapper for Rasqal and Sord
 
+**Book Chapter:** [Complete FFI Example: C Language Wrapper for Rasqal SPARQL Library and Sord RDF Datastore Library](https://leanpub.com/read/Gerbil-Scheme/complete-ffi-example-c-language-wrapper-for-rasqal-sparql-library-and-sord-rdf-datastore-library) — *Gerbil Scheme in Action* (free to read online).
 
 Install:
 

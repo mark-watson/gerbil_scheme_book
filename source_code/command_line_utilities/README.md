@@ -1,5 +1,8 @@
 # General Purpose Exmale of a Gerbil Scheme Command Line Utility
 
+**Book Chapter:** [Introduction To Writing Command Line Utilities](https://leanpub.com/read/Gerbil-Scheme/introduction-to-writing-command-line-utilities) — *Gerbil Scheme in Action* (free to read online).
+
+
 Build:
 
     make

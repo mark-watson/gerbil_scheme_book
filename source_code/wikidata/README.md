@@ -1,4 +1,7 @@
-Wikidata SPARQL (Gerbil Scheme)
+# Wikidata SPARQL (Gerbil Scheme)
+
+**Book Chapter:** [Wikidata API Using SPARQL Queries](https://leanpub.com/read/Gerbil-Scheme/wikidata-api-using-sparql-queries) — *Gerbil Scheme in Action* (free to read online).
+
 
 Overview
 - Small Gerbil Scheme helper to query the Wikidata Query Service (WDQS) from Scheme and parse SPARQL JSON results.

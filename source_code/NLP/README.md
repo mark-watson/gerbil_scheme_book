@@ -1,5 +1,8 @@
 # Knowledge Books Systems NLP Utilities rewritten in Gerbil SchemeKBS
 
+**Book Chapter:** [Code for Natural Language Processing (NLP)](https://leanpub.com/read/Gerbil-Scheme/code-for-natural-language-processing-nlp) — *Gerbil Scheme in Action* (free to read online).
+
+
 ## Test run:
 
 On some systems, you might run into link compatibility probelems. I did on macOS when I brew installed Gerbil Scheme and later brew updated openssl to a newer version. I fix this with:

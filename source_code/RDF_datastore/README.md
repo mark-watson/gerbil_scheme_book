@@ -1,5 +1,8 @@
 # RDF Datastore — Simple In-Memory RDF Store with Toy SPARQL
 
+**Book Chapter:** [A Simple In-Memory RDF Store and Query Language in Gerbil Scheme](https://leanpub.com/read/Gerbil-Scheme/a-simple-in-memory-rdf-store-and-query-language-in-gerbil-scheme) — *Gerbil Scheme in Action* (free to read online).
+
+
 A pure-Gerbil Scheme implementation of an in-memory RDF triple store with
 support for a useful subset of SPARQL `SELECT` queries.  No external
 libraries or C FFI are required.

@@ -1,5 +1,8 @@
 # Using the NLP library developed in another chapter
 
+**Book Chapter:** [Command Line Applications For NLP](https://leanpub.com/read/Gerbil-Scheme/command-line-applications-for-nlp) — *Gerbil Scheme in Action* (free to read online).
+
+
 ## Quick example
 
 ```console
