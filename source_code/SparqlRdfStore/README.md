@@ -2,6 +2,17 @@
 
 **Book Chapter:** [Complete FFI Example: C Language Wrapper for Rasqal SPARQL Library and Sord RDF Datastore Library](https://leanpub.com/read/Gerbil-Scheme/complete-ffi-example-c-language-wrapper-for-rasqal-sparql-library-and-sord-rdf-datastore-library) — *Gerbil Scheme in Action* (free to read online).
 
+A more advanced FFI example that wraps two production-grade C libraries — [Sord](https://drobilla.net/software/sord.html) (an in-memory RDF triple store) and [Rasqal](https://librdf.org/rasqal/) (a SPARQL query engine) — inside a shared C library (`libRDFWrap`), then calls it from Gerbil Scheme via the FFI.
+
+This is a step up from the `RaptorRDF_FFI` example: instead of embedding C inline, it builds a separate `.dylib`/`.so` and binds to it. The result is a full SPARQL-over-RDF pipeline accessible from Scheme with real data files (N-Triples, Turtle, N3).
+
+> **Note:** The default `Makefile` targets macOS (`.dylib`). A `Makefile.linux` is also provided for Linux.
+
+## Prerequisites
+
+- Gerbil Scheme (`gxi`/`gxc`)
+- Homebrew (macOS):
+
 Install:
 
     brew install sord
