@@ -118,7 +118,8 @@ Upon receiving a response, the function demonstrates robust result processing an
 
 The following architecture diagram shows the overall structure of the Groq inference project, illustrating how the common `groq_inference` utility communicates with the Groq API and how the individual model wrapper scripts (`kimi2.ss` and `gpt-oss-120b.ss`) delegate to it.
 
-![Architecture diagram for the Groq LLM inference example](images/groq_architecture.png)
+{width: "80%"}
+![Architecture diagram for the Groq LLM inference example](groq_architecture.png)
 
 ## Example scripts: kimi2.ss and gpt-oss-120b.ss
 

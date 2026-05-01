@@ -102,7 +102,8 @@ In the third example, I used the same prompt but used **displayln** to print the
 
 The following architecture diagram provides an overview of how the Ollama client interacts with the locally running Ollama server, showing the flow from prompt construction through the HTTP POST request to the `/api/generate` endpoint and the JSON response parsing.
 
-![Architecture diagram for the Ollama example](images/ollama_architecture.png)
+{width: "80%"}
+![Architecture diagram for the Ollama example](ollama_architecture.png)
 
 ## Tool/Function Calling with Ollama
 

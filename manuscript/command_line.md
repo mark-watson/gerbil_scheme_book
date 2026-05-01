@@ -67,11 +67,14 @@ The main function orchestrates the program's execution. It receives the command-
 
 The following architecture diagrams show the structure of the example projects covered in this chapter. The first diagram shows the simple "hello" example, the second shows the streamlined command-line utility structure, and the third shows the more flexible multi-module project layout.
 
-![Architecture diagram for the hello example](images/hello_architecture.png)
+{width: "80%"}
+![Architecture diagram for the hello example](hello_architecture.png)
 
-![Architecture diagram for the simple command-line utility structure](images/command_line_first_demo_architecture.png)
+{width: "80%"}
+![Architecture diagram for the simple command-line utility structure](command_line_first_demo_architecture.png)
 
-![Architecture diagram for the multi-module command-line utility project](images/command_line_architecture.png)
+{width: "80%"}
+![Architecture diagram for the multi-module command-line utility project](command_line_architecture.png)
 
 ## A More Flexible Structure for Command Line Utilities
 

@@ -73,7 +73,8 @@ Notice that I repeated the second example, displaying the string response in a m
 
 The following architecture diagram illustrates the structure of this example, showing how the Gerbil Scheme client authenticates with the OpenAI API via Bearer token, sends a chat completion request, and navigates the nested JSON response to extract the generated content.
 
-![Architecture diagram for the OpenAI API example](images/openai_architecture.png)
+{width: "80%"}
+![Architecture diagram for the OpenAI API example](openai_architecture.png)
 
 Sometimes we might want the output in a specific format, like JSON:
 

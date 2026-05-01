@@ -81,7 +81,8 @@ health
 
 The following architecture diagram shows the structure of the command-line NLP utilities, illustrating how the `categories.ss` tool wraps the native NLP library and how the `summarize.ss` tool delegates to the OpenAI API for text summarization.
 
-![Architecture diagram for the command-line NLP utilities](images/command_nlp_architecture.png)
+{width: "80%"}
+![Architecture diagram for the command-line NLP utilities](command_nlp_architecture.png)
 
 ## Using OpenAI's GPT-5 model To Summarize Input Text
 

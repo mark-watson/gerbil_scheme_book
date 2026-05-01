@@ -57,7 +57,8 @@ Once the http-post call returns, the program immediately checks the response sta
 
 The following architecture diagram shows the overall structure of this example, illustrating how the Gerbil Scheme client constructs an HTTP request, communicates with the Google Gemini API endpoint, and parses the JSON response to extract the generated text.
 
-![Architecture diagram for the Gemini API example](images/gemini_architecture.png)
+{width: "80%"}
+![Architecture diagram for the Gemini API example](gemini_architecture.png)
 
 ## Example Output
 

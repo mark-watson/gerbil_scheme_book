@@ -104,7 +104,8 @@ After setup, the parser processes the input file identified by its filename and 
 
 The following architecture diagram shows the structure of this FFI example, illustrating how Gerbil Scheme calls through the FFI boundary into the C wrapper code, which in turn uses the Raptor2 library to parse RDF files and serialize triples into N-Triples format.
 
-![Architecture diagram for the Raptor RDF FFI example](images/ffi_raptor_architecture.png)
+{width: "80%"}
+![Architecture diagram for the Raptor RDF FFI example](ffi_raptor_architecture.png)
 
 ## Test Code
 

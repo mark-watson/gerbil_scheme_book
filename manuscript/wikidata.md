@@ -234,7 +234,8 @@ The included test functions, **test1** and **test2**, serve as practical example
 
 The following architecture diagram provides an overview of the Wikidata client's structure, showing how SPARQL queries are URL-encoded, sent as HTTP GET requests to the Wikidata Query Service endpoint, and how the JSON results are parsed and transformed into idiomatic Gerbil Scheme data structures.
 
-![Architecture diagram for the Wikidata SPARQL client](images/wikidata_architecture.png)
+{width: "80%"}
+![Architecture diagram for the Wikidata SPARQL client](wikidata_architecture.png)
 
 ## Example Output
 
