@@ -100,6 +100,10 @@ A few comments: In the second example I added "Just output the bash script and n
 
 In the third example, I used the same prompt but used **displayln** to print the result in a more useful format.
 
+The following architecture diagram provides an overview of how the Ollama client interacts with the locally running Ollama server, showing the flow from prompt construction through the HTTP POST request to the `/api/generate` endpoint and the JSON response parsing.
+
+![Architecture diagram for the Ollama example](images/ollama_architecture.png)
+
 ## Tool/Function Calling with Ollama
 
 Modern LLMs can do more than generate text — they can also decide to call functions. Tool calling (sometimes called function calling) allows a model to inspect a set of tool descriptions you provide, and when appropriate, respond with a structured request to invoke one of those tools rather than producing a plain text answer. Your application then executes the tool, feeds the result back to the model, and the model incorporates that real-world data into its final answer. This creates a powerful agent loop: the model reasons about what information it needs, your code fetches it, and the model synthesizes a response.

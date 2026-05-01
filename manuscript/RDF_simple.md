@@ -102,6 +102,10 @@ simplification; a production system would need to distinguish case-sensitive
 IRIs from case-insensitive keywords.
 
 
+The following architecture diagram illustrates the structure of the in-memory RDF store, showing the data flow from triple storage through SPARQL query tokenization, parsing, pattern matching, and result projection.
+
+![Architecture diagram for the in-memory RDF store](images/rdf_datastore_architecture.png)
+
 ## Query Evaluation: Pattern Matching and Joining
 
 The evaluator in **RDF.ss** works in terms of *environments* — association

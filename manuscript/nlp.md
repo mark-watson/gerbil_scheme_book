@@ -220,6 +220,10 @@ We will not discuss the following code files:
 - proper-names.ss - identify proper names in text.
 
 
+The following architecture diagram illustrates the structure of the NLP project, showing how the various modules — tokenization, part-of-speech tagging, categorization, key phrase extraction, and name recognition — are composed into the processing pipeline exposed by the `main.ss` entry point.
+
+![Architecture diagram for the NLP project](images/nlp_architecture.png)
+
 ## Test Run:
 
 On some systems, you might run into link compatibility probelems. I did on macOS when I brew installed Gerbil Scheme and later brew updated openssl to a newer version.

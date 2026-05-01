@@ -116,6 +116,10 @@ The implementation begins by defining the **groq_inference** function, which acc
 
 Upon receiving a response, the function demonstrates robust result processing and error handling. It first checks if the HTTP status code is 200 (OK), indicating a successful request. If it is, a series of **let*** bindings are used to safely parse the JSON response and navigate the nested data structure to extract the final content string from **response['choices'][0]['message']['content']**, with checks at each step to prevent errors on an unexpected response format. If the content is successfully extracted, it is returned as the result of the function. However, if the HTTP status is anything other than 200, the function enters its error-handling branch, raising a descriptive error that includes the failing status code and the raw text body of the response, providing valuable debugging information to the caller.
 
+The following architecture diagram shows the overall structure of the Groq inference project, illustrating how the common `groq_inference` utility communicates with the Groq API and how the individual model wrapper scripts (`kimi2.ss` and `gpt-oss-120b.ss`) delegate to it.
+
+![Architecture diagram for the Groq LLM inference example](images/groq_architecture.png)
+
 ## Example scripts: kimi2.ss and gpt-oss-120b.ss
 
 These two scripts are simple enough to just list without comment:

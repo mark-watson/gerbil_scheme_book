@@ -55,6 +55,10 @@ The core logic resides within the gemini function, which uses a series of let* b
 
 Once the http-post call returns, the program immediately checks the response status. If the request was successful (status code 200), it proceeds to parse the data; otherwise, nothing is returned. The parsing logic is a chain of data extraction operations on the JSON response, which is first converted into a Gerbil Scheme hash table. Using a combination of **hash-ref** to access values by their keys (like 'candidates and 'content) and the function **car** to access the first element of a list, the code navigates the nested data structure to isolate the desired text content. This sequence elegantly demonstrates how Gerbil Scheme's standard library functions for handling lists and hash tables can be composed to efficiently process structured data from external APIs.
 
+The following architecture diagram shows the overall structure of this example, illustrating how the Gerbil Scheme client constructs an HTTP request, communicates with the Google Gemini API endpoint, and parses the JSON response to extract the generated text.
+
+![Architecture diagram for the Gemini API example](images/gemini_architecture.png)
+
 ## Example Output
 
 Change directory to **source-code/gemini** an run:

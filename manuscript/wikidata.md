@@ -232,6 +232,10 @@ The core of this example is built around the **query-wikidata** and **query-wiki
 
 The included test functions, **test1** and **test2**, serve as practical examples of this code's capabilities. The **test2** function is a straightforward lookup, retrieving the birth date and birthplace for a specific Wikidata entity (Grace Hopper, wd:Q7249). In contrast, **test1** demonstrates a more powerful, dynamic pattern. It first runs a query to find the URIs for "Bill Gates" and "Microsoft" based on their English labels and types (human and business, respectively). It then uses these dynamically discovered URIs to construct a second query that finds all direct properties linking the two entities. This two-step approach is a common and robust method for interacting with linked data systems. Furthermore, the test1-ua and test2-ua variants illustrate how to provide a custom User-Agent string, for instance by reading it from an environment variable, showcasing the flexibility of the primary query functions.
 
+The following architecture diagram provides an overview of the Wikidata client's structure, showing how SPARQL queries are URL-encoded, sent as HTTP GET requests to the Wikidata Query Service endpoint, and how the JSON results are parsed and transformed into idiomatic Gerbil Scheme data structures.
+
+![Architecture diagram for the Wikidata SPARQL client](images/wikidata_architecture.png)
+
 ## Example Output
 
 We use a Makefile target to start a Gerbil Scheme REPL with the example code loaded:

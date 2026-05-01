@@ -102,6 +102,10 @@ The C portion begins by including the **raptor2.h** header and defining a callba
 
 After setup, the parser processes the input file identified by its filename and syntax. Each RDF statement is converted into N-Triples and appended to the output string via the **iostream**. Once parsing is complete, the parser, URIs, iostream, and world are released, leaving a fully materialized string containing the N-Triples serialization. This string is returned to Scheme through the FFI, where Gambit copies it into a managed Scheme string. On the Scheme side, the **define-c-lambda** form binds this C function as the procedure **raptor-parse-file->ntriples**, exposing it with the expected **(filename syntax-name) -> ntriples-string** interface. The result is a clean abstraction: Scheme code can call **raptor-parse-file->ntriples** with an RDF file and syntax, receiving back normalized N-Triples ready for further processing in Gerbil Scheme.
 
+The following architecture diagram shows the structure of this FFI example, illustrating how Gerbil Scheme calls through the FFI boundary into the C wrapper code, which in turn uses the Raptor2 library to parse RDF files and serialize triples into N-Triples format.
+
+![Architecture diagram for the Raptor RDF FFI example](images/ffi_raptor_architecture.png)
+
 ## Test Code
 
 This Gerbil Scheme test code in the file **test.ss** exercises the FFI binding **raptor-parse-file->ntriples** by creating a minimal Turtle input, invoking the parser in two modes (“turtle” and “guess”), and asserting that both produce the same canonical N-Triples output. It’s designed to be self-contained: it writes a temporary .ttl file, runs the conversion twice, compares results against an expected string, then cleans up and prints status.

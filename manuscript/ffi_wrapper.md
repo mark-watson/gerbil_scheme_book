@@ -229,6 +229,10 @@ print-flags:
 ```
 
 
+The following architecture diagram provides an overview of the complete FFI pipeline, showing how the Gerbil Scheme client calls through the FFI shim into the C wrapper library, which in turn uses Serd/Sord for RDF storage and Rasqal/Raptor for SPARQL query execution and result serialization.
+
+![Architecture diagram for the SPARQL RDF Store FFI example](images/ffi_wrapper_architecture.png)
+
 ## Implementation of the C Language Wrapper
 
 Here we write a wrapper that will later be called from Gerbil Scheme code.
