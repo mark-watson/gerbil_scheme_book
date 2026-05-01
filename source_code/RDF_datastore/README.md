@@ -35,6 +35,10 @@ gxi RDF.ss
 | `make compile` | Compile with `gxc`; module becomes importable as `:rdf-datastore/RDF` |
 | `make clean` | Remove `.gerbil/` and compiled artefacts (`*.o*`, `*.ssxi`, `*.ssi`) |
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## API
 
 ### Store management

@@ -19,6 +19,10 @@ A minimal Gerbil Scheme library for calling the [OpenAI Chat Completions API](ht
 | `openai.ss` | Library module — exports `openai` procedure |
 | `gerbil.pkg` | Package declaration (`openai`) |
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## How to run
 
 ### Interactive REPL

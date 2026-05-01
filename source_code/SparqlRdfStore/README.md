@@ -18,6 +18,10 @@ Install:
     brew install sord
     brew install rasqal
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ```
 $ make
 

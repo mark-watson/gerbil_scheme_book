@@ -24,6 +24,10 @@ This directory shows how to build standalone command-line executables on top of 
 | `test_command_string.ss` | Minimal demo: echoes all CLI arguments as a single string |
 | `test.ss` / `test2.ss` | REPL test scripts demonstrating the NLP library API |
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## How to run
 
 ### Interactive REPL — call the NLP library directly

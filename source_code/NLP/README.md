@@ -26,6 +26,10 @@ A pure-Gerbil Scheme NLP library ported from the author's *Knowledge Books Syste
 | `build.ss` | Gerbil package build script |
 | `data/` | Category word-frequency tables and test corpora |
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Quick start
 
 ### macOS: set deployment target first (avoids OpenSSL link errors after `brew upgrade`)

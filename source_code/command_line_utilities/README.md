@@ -12,6 +12,10 @@ A fuller example of a Gerbil Scheme command-line utility using the proper **pack
 - Using `gerbil.pkg` for package declaration and `build.ss` for compilation
 - Installing the resulting binary into `.gerbil/bin/` for local use
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Prerequisites
 
 - Gerbil Scheme (`gxi`/`gxc`)

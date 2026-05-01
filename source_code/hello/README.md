@@ -19,6 +19,10 @@ This is the simplest possible Gerbil Scheme program — a `hello` function that 
 (hello 'Brady)
 ```
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## How to run
 
 ### Interpreted (no compilation needed)

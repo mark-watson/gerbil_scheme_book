@@ -14,6 +14,10 @@
 
 This demonstrates the full workflow: write a `main` procedure → compile to a native binary → run with arguments.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Prerequisites
 
 - Gerbil Scheme (`gxc` compiler)

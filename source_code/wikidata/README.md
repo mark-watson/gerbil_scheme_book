@@ -16,6 +16,10 @@ Quick Start
   - `gxi -L wikidata.ss -e "(test2)"`
  - With a User-Agent: `make run-agent` (uses `WDQS_UA` or a default sample)
 
+## Architecture
+
+![Generated image](architecture.png)
+
 API
 - `query-wikidata query [user-agent]`
   - Sends `query` to `https://query.wikidata.org/sparql` using GET.

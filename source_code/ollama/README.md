@@ -23,6 +23,10 @@ A Gerbil Scheme library for running prompts against locally-hosted language mode
 | `use_tools.ss` | Tool-calling library — exports `ollama-with-tools` (uses `/api/chat` with tool dispatch loop) |
 | `gerbil.pkg` | Package declaration |
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## How to run
 
 ### Simple completion (ollama.ss)

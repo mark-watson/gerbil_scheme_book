@@ -20,6 +20,10 @@ A minimal, reusable Gerbil Scheme library for calling the [Google Gemini](https:
 | `gerbil.pkg` | Package declaration (`gemini`) |
 | `Makefile` | `run` target — loads the library in an interactive REPL |
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## How to run
 
 ### Interactive REPL

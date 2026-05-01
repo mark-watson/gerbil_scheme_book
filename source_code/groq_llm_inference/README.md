@@ -25,6 +25,10 @@ Groq's proprietary LPU hardware delivers dramatically lower latency and higher t
 | `gpt-oss-120b.ss` | Convenience wrapper for `openai/gpt-oss-120b` (OpenAI open-source 120B model) |
 | `Makefile` | Build and run targets |
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## How to run
 
 ### Compile the library

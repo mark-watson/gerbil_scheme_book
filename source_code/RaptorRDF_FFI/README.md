@@ -17,6 +17,10 @@ This example demonstrates Gerbil Scheme's **Foreign Function Interface (FFI)** b
 
 `test.ss` validates the FFI by writing a temporary Turtle file, parsing it with both explicit syntax (`"turtle"`) and auto-detection (`"guess"`), and asserting the expected N-Triples output.
 
+## Architecture
+
+![Generated image](architecture.png)
+
 ## Prerequisites
 
 - macOS with Xcode command-line tools
