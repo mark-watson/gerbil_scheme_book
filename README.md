@@ -8,6 +8,8 @@ Link to book on LeanPub:
 
 [https://leanpub.com/Gerbil-Scheme](https://leanpub.com/Gerbil-Scheme)
 
+![Book Cover](manuscript/resources/title.jpg)
+
 Read this book in the manuscript subdirectory:
 
 [manuscript/TOC.md](./manuscript/TOC.md)
