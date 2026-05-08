@@ -2,7 +2,7 @@
 
 **Book Chapter:** [Google Gemini API](https://leanpub.com/read/Gerbil-Scheme/google-gemini-api) — *Gerbil Scheme in Action* (free to read online).
 
-A minimal, reusable Gerbil Scheme library for calling the [Google Gemini](https://ai.google.dev/) generative AI API. The single `gemini` procedure sends a prompt and returns the model's text response as a Scheme string — no third-party dependencies beyond Gerbil's standard library.
+A minimal, reusable Gerbil Scheme library for calling the [Google Gemini](https://ai.google.dev/) generative AI API via the **Interactions API**. The single `gemini` procedure sends a prompt and returns the model's text response as a Scheme string — no third-party dependencies beyond Gerbil's standard library.
 
 ## Prerequisites
 
@@ -54,7 +54,7 @@ Then call the function at the prompt:
 
 ```scheme
 (gemini prompt
-        model: "gemini-2.5-flash"          ; optional — any Gemini model name
+        model: "gemini-3-flash-preview"          ; optional — any Gemini model name
         system-prompt: "You are a helpful assistant.")  ; optional
 ```
 
@@ -62,6 +62,7 @@ Returns the response text as a string, or raises an error on API failure.
 
 ## Notes
 
-- Uses `https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent`
-- Default model is `gemini-2.5-flash` — fast and inexpensive for most tasks
+- Uses `https://generativelanguage.googleapis.com/v1beta/interactions` (Interactions API)
+- Response schema: new `steps` array (Api-Revision: 2026-05-20) — text extracted from `model_output` steps
+- Default model is `gemini-3-flash-preview`
 - The API key is read at call time from `GOOGLE_API_KEY`; no key is baked into the source
