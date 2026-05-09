@@ -1,22 +1,7 @@
-;; Simple test for ffi.ss: validates N-Triples output
+;; Test suite for ffi.ss: validates N-Triples output from Raptor2 FFI
 
-(import "ffi")
-(export main)
 (import "ffi" :gerbil/gambit)
-
-(define (write-file path content)
-  (let ((p (open-output-file path)))
-    (display content p)
-    (close-output-port p)))
-
-(define (read-file path)
-  (let ((p (open-input-file path)))
-    (let loop ((chunks '()))
-      (let ((c (read-char p)))
-        (if (eof-object? c)
-            (begin (close-input-port p)
-                   (list->string (reverse chunks)))
-            (loop (cons c chunks)))))))
+(export main)
 
 (define (assert-equal expected actual label)
   (if (equal? expected actual)
@@ -29,26 +14,40 @@
 
 (define (main . args)
   (let* ((ttl-file "sample.ttl")
-         (ttl-content "@prefix ex: <http://example.org/> .
-ex:s ex:p ex:o .
-")
-         (expected-nt "<http://example.org/s> <http://example.org/p> <http://example.org/o> .
-"))
-    ;; Prepare sample Turtle file
-    (write-file ttl-file ttl-content)
+         (ttl-content "@prefix ex: <http://example.org/> .\nex:s ex:p ex:o .\n")
+         (expected-nt "<http://example.org/s> <http://example.org/p> <http://example.org/o> .\n"))
 
-    ;; Exercise FFI with explicit syntax
+    ;; Prepare sample Turtle file
+    (call-with-output-file ttl-file
+      (lambda (p) (display ttl-content p)))
+
+    ;; 1. Parse with explicit syntax
     (let ((nt1 (raptor-parse-file->ntriples ttl-file "turtle")))
       (assert-equal expected-nt nt1 "turtle -> ntriples"))
 
-    ;; Exercise FFI with syntax guessing
+    ;; 2. Parse with syntax guessing
     (let ((nt2 (raptor-parse-file->ntriples ttl-file "guess")))
       (assert-equal expected-nt nt2 "guess -> ntriples"))
+
+    ;; 3. High-level API with default syntax
+    (let ((nt3 (parse-rdf-file ttl-file)))
+      (assert-equal expected-nt nt3 "parse-rdf-file (default syntax)"))
+
+    ;; 4. Structured triples API
+    (let ((triples (parse-rdf-file->triples ttl-file)))
+      (assert-equal 1 (length triples) "parse-rdf-file->triples returns 1 triple")
+      (assert-equal '("<http://example.org/s>"
+                      "<http://example.org/p>"
+                      "<http://example.org/o>")
+                    (car triples)
+                    "parse-rdf-file->triples structure"))
+
+    ;; 5. Error handling: nonexistent file returns empty string
+    (let ((bad (raptor-parse-file->ntriples "no-such-file.ttl" "turtle")))
+      (assert-equal "" bad "nonexistent file returns empty string"))
 
     ;; Clean up
     (when (file-exists? ttl-file)
       (delete-file ttl-file))
 
-    (display "All tests passed.
-")))
-
+    (display "All tests passed.\n")))
