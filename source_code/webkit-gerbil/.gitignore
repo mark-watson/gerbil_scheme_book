@@ -1,0 +1,13 @@
+*.dylib
+*.o
+*.so
+*.o1
+*.o2
+*.ssi
+*__exe.scm
+*__exe.c
+*__exe_.c
+hello-world
+counter-app
+markdown-viewer
+.gerbil_build/
