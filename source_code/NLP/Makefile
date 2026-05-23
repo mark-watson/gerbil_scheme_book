@@ -32,5 +32,4 @@ clean:
 compile-mods:
 	@echo "Compiling modules with gxc into project-local .gerbil..."
 	gxc utils.ss fasttag.ss category.ss proper-names.ss \
-	  data/stop-words.ss generated-code/lexdata.ss generated-code/cat-data-tables.ss \
 	  main.ss nlp.ss

@@ -1,18 +1,37 @@
-(import :nlp/main)
+(import :nlp/main :gerbil/gambit)
 
-(export main write-json-string write-json-string-list write-json-categories json-write print-help)
+(export main json-escape write-json-string write-json-string-list write-json-categories json-write print-help)
 
 ;; minimal JSON writer for our specific output
 (define (json-escape s)
-  (list->string
-   (apply append
-          (map (lambda (ch)
-                 (cond
-                  ((char=? ch #\") '(#\\ #\"))
-                  ((char=? ch #\\) '(#\\ #\\))
-                  ((char=? ch #\newline) '(#\\ #\n))
-                  (else (list ch))))
-               (string->list s)))))
+  (let ((port (open-output-string)))
+    (for-each
+     (lambda (ch)
+       (let ((code (char->integer ch)))
+         (cond
+          ((char=? ch #\") (display "\\\"" port))
+          ((char=? ch #\\) (display "\\\\" port))
+          ((char=? ch #\newline) (display "\\n" port))
+          ((= code 8)  (display "\\b" port))
+          ((= code 9)  (display "\\t" port))
+          ((= code 12) (display "\\f" port))
+          ((= code 13) (display "\\r" port))
+          ((or (< code 32)
+               (= code 127)
+               (and (>= code 128) (<= code 159))
+               (= code 8232)
+               (= code 8233))
+           (let* ((hex (number->string code 16))
+                  (len (string-length hex)))
+             (display "\\u" port)
+             (cond
+              ((= len 1) (display "000" port))
+              ((= len 2) (display "00" port))
+              ((= len 3) (display "0" port)))
+             (display hex port)))
+          (else (write-char ch port)))))
+     (string->list s))
+    (get-output-string port)))
 
 (define (write-json-string s)
   (display "\"")

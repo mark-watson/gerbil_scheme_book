@@ -13,6 +13,7 @@
 
 (import :std/iter) ;; loop utilities
 (import :std/misc/ports)
+(import :gerbil/gambit)
 
 ;; Load stop words at compile-time from included data
 (include "data/stop-words.ss")

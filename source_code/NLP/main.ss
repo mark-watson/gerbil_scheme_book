@@ -5,6 +5,7 @@
 (import :nlp/fasttag)
 (import :nlp/category)
 (import :nlp/proper-names)
+(import :gerbil/gambit)
 
 (export process-file process-string)
 

@@ -120,7 +120,7 @@
 
 ;; Gerbil module imports
 (export parts-of-speech generate-lex-hash)
-(import :nlp/utils)
+(import :nlp/utils :gerbil/gambit)
 
 ;; Load lexicon data at compile time to avoid runtime file IO
 (include "generated-code/lexdata.ss")

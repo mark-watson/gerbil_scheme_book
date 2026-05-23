@@ -5,6 +5,7 @@
 (import :std/iter)
 (import :nlp/utils)
 (import :nlp/fasttag)
+(import :gerbil/gambit)
 
 (export find-human-names load-name-data string-tokenize string-starts-with)
 
