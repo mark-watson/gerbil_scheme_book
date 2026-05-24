@@ -1,0 +1,12 @@
+(gerbil-build-deps-v2:
+ (daily-use/daily_use/cache
+  "daily_use/cache"
+  (gerbil/core std/error std/sugar))
+ (daily-use/daily_use/main
+  (exe: "daily_use/main" bin: "daily-use")
+  (daily-use/daily_use/cache
+   gerbil/core
+   std/net/request
+   std/sugar
+   std/text/json)))
+
