@@ -263,3 +263,10 @@ $ cat output.json | jq
   ]
 }
 ```
+
+## Optional Practice Problems
+
+1. **Place Name Extraction**: The `place-list` returned in `main.ss` is currently hardcoded as empty (`place-list '()`). Extend the NLP toolkit to load a simple list of countries and cities (a gazetteer) and identify place name mentions in text.
+2. **Flexible N-Gram Filter**: Modify the n-gram generator in `main.ss` to generate 5-grams and filter out any n-grams containing punctuation or special symbols.
+3. **TF-IDF Calculation**: Write a Scheme function that takes a list of processed document strings and computes the Term Frequency-Inverse Document Frequency (TF-IDF) score for all non-noise words across the corpus.
+

@@ -605,3 +605,10 @@ const result = await window.webkit_cl.invoke("command-name",
 6. **Code reuse** -- The same C/Objective-C shim serves both Common Lisp and Gerbil Scheme, demonstrating the value of a clean C API as a language-agnostic boundary
 
 This framework demonstrates that Gerbil Scheme can build polished desktop applications. The web rendering layer handles the visual complexity while Scheme provides the computational backbone -- a productive division of labor for tools, dashboards, and data viewers.
+
+## Optional Practice Problems
+
+1. **Interactive Click Counter**: Create a small application where clicking a button in HTML sends a JSON message to increment a counter variable in Scheme, and then updates the DOM with the updated value.
+2. **Error Logging Bridge**: Implement a bridge handler that allows the web view's JavaScript execution context to log stack traces and uncaught exceptions directly to the Gerbil Scheme stdout or a log file.
+3. **Dynamic Window Controls**: Add FFI functions and Scheme wrappers in `webkit-gerbil.ss` to dynamically resize the window or change its title from Scheme code after the app has started running.
+

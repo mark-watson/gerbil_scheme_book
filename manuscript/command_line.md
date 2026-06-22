@@ -151,3 +151,10 @@ Gerbil Scheme is an ahead-of-time (AOT) compiled language that uses Gambit-C as 
 
 - Object Files (.o*): These are the compiled object code for your Scheme files. The number suffix (e.g., .o1, .o2) often relates to compilation passes or optimization levels. The files with a tilde (~) are typically temporary or backup files from the compilation process.
 - Module Metadata (.ssi): This "Scheme Source Information" file contains metadata about the compiled module, including its dependencies, exported symbols, and macros. This file is essential for the (import) system to work correctly.
+
+## Optional Practice Problems
+
+1. **Greeter Count Option**: Extend the basic CLI demo in `test-tool.ss` to support an optional parameter `--count=INT` (or `-c INT`), allowing the user to specify how many times the greeting is printed.
+2. **Standard Argument Parser**: Rewrite the manual recursive list parsing in `main.ss` (of the multi-module project) to utilize the declarative `:std/cli/getopt` parser.
+3. **Subcommand Extension**: Add a new subcommand `cat` to `command_line_utilities` that outputs the contents of a text file provided in the arguments list.
+

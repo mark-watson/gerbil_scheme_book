@@ -452,3 +452,10 @@ To add a new tool, follow three steps:
 ```
 
 The model will read the tool descriptions you provide and decide when to use them based on the user's prompt. Good tool descriptions are important — they help the model understand when a tool is appropriate and what arguments to pass.
+
+## Optional Practice Problems
+
+1. **Conversational History**: Extend `ollama.ss` to use the `/api/chat` endpoint and support maintaining a conversation history list instead of a single static prompt.
+2. **Real-time Utility Tool**: Implement and register a new tool in `use_tools.ss` that retrieves the current system time or evaluates simple mathematical expressions from the command line.
+3. **HTTP Client Timeout**: Add a connection/request timeout configuration to the HTTP client inside `ollama.ss` to prevent the client from hanging if the local Ollama server is overloaded.
+

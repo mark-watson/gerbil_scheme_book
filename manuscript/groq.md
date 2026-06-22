@@ -192,7 +192,14 @@ $ gxi -l gpt-oss-120b.ss
 factorial :: Integer -> Integer
 factorial 0 = 1
 factorial n = n * factorial (n - 1)
-``
+```
 >
 ```
+
+## Optional Practice Problems
+
+1. **Hyperparameter Configuration**: Modify the function `groq_inference` in `groq_inference.ss` to accept optional keyword arguments for `temperature`, `max_tokens`, and `top_p` to control generation randomness and length.
+2. **Model Wrappers**: Create a new wrapper file, similar to `kimi2.ss`, for another popular open model hosted on Groq, such as `llama3-70b-8192` or `mixtral-8x7b-32768`.
+3. **Fallback Client**: Implement a fallback mechanism inside `groq_inference` that automatically retries the query using a faster, smaller model (e.g., `llama3-8b`) if the initial request to a large model fails or times out.
+
 

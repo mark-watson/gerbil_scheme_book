@@ -81,3 +81,10 @@ $ gxi -L gemini.ss -
 
 Notice how Gemini initially returned the JSON results in Markdown format and I modified the prompt to get the output format I wanted. Another good technique is to give LLMs an example of the output format you want in the prompt.
 
+## Optional Practice Problems
+
+1. **Streaming Responses**: Modify `gemini.ss` to parse and display streaming responses from the Gemini API instead of waiting for the full response to complete.
+2. **System Instruction Payload**: The parameter `system-prompt` in `gemini.ss` is defined but not actually sent to the API. Update the request body structure to properly pass the system instructions according to Google Gemini's API payload specification.
+3. **Robust Error Handling**: Implement exponential backoff retry logic to handle rate limit (HTTP 429) errors gracefully.
+
+

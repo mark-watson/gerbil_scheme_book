@@ -282,4 +282,11 @@ Birth Date: 1862-02-14T00:00:00Z
 Birth Place: Venice
 ```
 
+## Optional Practice Problems
+
+1. **Large City Query**: Write a SPARQL query using `query-wikidata/alist` to find all cities with a population greater than 1 million, and print their names and populations in descending order.
+2. **In-Memory Cache**: Implement an in-memory query cache that maps SPARQL query strings to their parsed JSON results, avoiding redundant API calls for duplicate requests.
+3. **URI Parser Helper**: Implement a helper function `extract-entity-id` that extracts the alphanumeric entity identifier (such as `"Q7249"`) from a full Wikidata entity URI (like `"http://www.wikidata.org/entity/Q7249"`).
+
+
 

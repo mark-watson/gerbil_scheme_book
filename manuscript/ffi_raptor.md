@@ -336,3 +336,10 @@ PASS parse-rdf-file->triples structure
 PASS nonexistent file returns empty string
 All tests passed.
 ```
+
+## Optional Practice Problems
+
+1. **In-Memory Parsing**: Modify the C and Scheme FFI logic in `ffi.ss` to add support for parsing RDF from an in-memory string buffer rather than reading it from a file path on disk.
+2. **DataType and LangTag Handling**: The current `parse-ntriple-line` splits on spaces. Extend it to properly handle and parse literals with language tags (like `"apple"@en`) or XML Schema datatypes (like `"123"^^<http://www.w3.org/2001/XMLSchema#integer>`).
+3. **RDF Query Helper**: Write a Scheme function using `parse-rdf-file->triples` that allows users to query and filter the resulting triples list by a specific subject or predicate URI.
+

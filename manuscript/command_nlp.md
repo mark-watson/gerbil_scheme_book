@@ -135,3 +135,10 @@ The text contains three parts: practical self-care and stress-management tips (l
 Marks-Mac-mini:command_line_NLP $ cat ~/temp/Clojure-AI-Book-Code/docs_qa/data/economics.txt | ./summarize   
 The text describes the Austrian School of economics—founded by Austrians such as Carl Menger, Eugen von Böhm-Bawerk and Ludwig von Mises—which stresses the spontaneous ordering role of the price mechanism, skepticism about mathematical modelling because of subjective human choices, and advocacy of laissez-faire policies, strict enforcement of voluntary contracts, and minimal government intervention. It also defines economics as the social science studying production, distribution and consumption of goods and services (formerly called political economy), distinguishes microeconomics (behavior of individual agents and markets) from macroeconomics (aggregate issues like unemployment, inflation and growth), and emphasizes that economic agents face scarcity, have multiple ends and limited resources, and make choices to maximize value subject to informational and cognitive constraints. The text notes the professionalization of economics since about 1900, with widespread university programs and graduate degrees.
 ```
+
+## Optional Practice Problems
+
+1. **Category Confidence Display**: Update `categories.ss` to output the calculated confidence score next to each identified category instead of only printing the category name.
+2. **Dynamic Summarization Length**: Modify `summarize.ss` to accept a `--max-sentences` parameter, and interpolate this parameter into the system prompt text to guide the model on the summary's target length.
+3. **Proper Name Extraction Command**: Write a new executable command-line program `names.ss` that takes a path to a file or reads from standard input, processes the text using `:nlp/main`, and lists all identified proper names.
+

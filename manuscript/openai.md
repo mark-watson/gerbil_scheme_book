@@ -148,3 +148,10 @@ EOF
 }
 > 
 ```
+
+## Optional Practice Problems
+
+1. **Structured JSON Output**: Extend `openai.ss` to pass a `response_format` configuration with a JSON schema in the API request, ensuring that the model returns valid, structured JSON matching your target format.
+2. **Multi-turn Chat Client**: Modify `openai.ss` so that it accepts a list of past message hash tables instead of a single prompt, allowing it to maintain state in a multi-turn conversation.
+3. **Vision/Image Analysis**: Add support for analyzing images by encoding a local image file to a base64 string and formatting the prompt payload with a `type: "image_url"` structure.
+

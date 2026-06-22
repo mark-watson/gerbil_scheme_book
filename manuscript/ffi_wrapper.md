@@ -506,3 +506,9 @@ $ ./TEST_client data.ttl @q.sparql
 <http://example.org/article2>
 <http://example.org/alice>
 ```
+
+## Optional Practice Problems
+
+1. **Structured JSON Output**: Extend the FFI bindings in `rdfwrap.ss` to retrieve SPARQL results in JSON format instead of a tab-separated raw string, and write a Scheme parser for it.
+2. **Parameterized Query C Wrapper**: Modify the underlying C wrapper library in the `C-source/` directory to support parameter binding for SPARQL queries, preventing SPARQL injection risks.
+3. **Automated Resource Manager**: Create a high-level Scheme wrapper macro `with-rdf-store` that automatically initializes the RDF database from a given file, executes a block of queries, and guarantees that `rdf-free` is called even in the event of Scheme exceptions.

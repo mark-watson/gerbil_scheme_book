@@ -610,3 +610,10 @@ Several directions are natural next steps from this foundation:
 Each of these extensions is a natural exercise in applied Scheme programming,
 and the clean separation of the data model, the parser, and the evaluator in
 **RDF.ss** makes them straightforward to add without rewriting the whole system.
+
+## Optional Practice Problems
+
+1. **LIMIT Clause Support**: Modify the SPARQL query parser and evaluator in `RDF.ss` to parse and respect a `LIMIT <integer>` clause at the end of a SELECT query, restricting the number of returned result rows.
+2. **OPTIONAL Match Pattern**: Implement support for `OPTIONAL { ... }` blocks in the query evaluator, allowing queries to succeed and bind variables even if some of the optional triple patterns do not match.
+3. **N-Triples Importer**: Write a function that reads an N-Triples file, parses each valid line into subject, predicate, and object strings, and inserts them into the in-memory RDF store.
+
