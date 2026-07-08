@@ -1,1 +1,2 @@
 anomaly-detection.md
+chess-game.md
