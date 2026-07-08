@@ -490,7 +490,7 @@ The output reports several important quantities.
 - **TP=24 FP=4 FN=1 TN=39**: the confusion matrix on the 68-observation test set. `TP` (true positive) is a correctly-identified malignant case, `FN` (false negative) is a missed malignant case, `FP` (false positive) is a benign case wrongly flagged, and `TN` (true negative) is a correctly-identified benign case.
 - **precision = 0.8571**: of the 28 observations the model called "anomaly", 24 were truly malignant. Precision answers "when the model raises an alarm, how often is it right?"
 - **recall = 0.9600**: of the 25 truly malignant observations, the model caught 24. Recall answers "of all the actual anomalies, how many did we catch?"
-- **`F_1`$ = 0.9057**: the harmonic mean of precision and recall. `F_1`$ is a single-number summary of overall detection quality when both false positives and false negatives matter.
+- **F_1 = 0.9057**: the harmonic mean of precision and recall. `F_1` is a single-number summary of overall detection quality when both false positives and false negatives matter.
 
 The recall value is particularly encouraging in a medical setting - missing a malignant tumor is a much more costly mistake than a false alarm, so a recall above 0.95 is a genuinely useful outcome.
 
