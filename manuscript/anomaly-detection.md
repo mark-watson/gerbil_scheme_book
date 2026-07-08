@@ -2,24 +2,26 @@
 
 Anomaly detection is one of the most practical applications of unsupervised and semi-supervised machine learning. Rather than asking "what class does this belong to?", we ask a subtler and often more useful question: "does this observation look like the ones I have already seen?" In fraud detection, manufacturing quality control, medical diagnostics, network intrusion monitoring, and predictive maintenance, the interesting events are usually rare. Trying to build a supervised classifier for events that occur one time in a thousand often fails - there are simply not enough positive examples to learn a good decision boundary. Anomaly detection sidesteps this problem entirely by modeling the *normal* distribution of data and flagging observations that fall outside it.
 
-In this chapter we implement a **multivariate Gaussian anomaly detector** in Gerbil Scheme from scratch, then apply it to the classic Wisconsin Breast Cancer dataset. The detector fits a Gaussian distribution to each feature independently (a "diagonal covariance" assumption), computes the probability density $p(x)$ of each observation, and flags observations whose density falls below a threshold $\epsilon$ as anomalies. The threshold is selected automatically by sweeping over 200 candidate values and picking the one that maximizes performance on a cross-validation set.
+In this chapter we implement a **multivariate Gaussian anomaly detector** in Gerbil Scheme from scratch, then apply it to the classic Wisconsin Breast Cancer dataset. The detector fits a Gaussian distribution to each feature independently (a "diagonal covariance" assumption), computes the probability density `p(x)`$ of each observation, and flags observations whose density falls below a threshold `\epsilon`$ as anomalies. The threshold is selected automatically by sweeping over 200 candidate values and picking the one that maximizes performance on a cross-validation set.
 
 ## Theoretical Background
 
-The core idea is that if we assume each feature $x_j$ of a "normal" observation is drawn from a Gaussian distribution with mean $\mu_j$ and variance $\sigma^2_j$, then the probability density of a full observation vector $x = (x_1, x_2, \dots, x_n)$ can be approximated by combining the per-feature Gaussians. The Gaussian probability density function for a single feature is:
+The core idea is that if we assume each feature `x_j`$ of a "normal" observation is drawn from a Gaussian distribution with mean `\mu_j`$ and variance `\sigma^2_j`$, then the probability density of a full observation vector `x = (x_1, x_2, \dots, x_n)`$ can be approximated by combining the per-feature Gaussians. The Gaussian probability density function for a single feature is:
 
-$$p(x_j; \mu_j, \sigma^2_j) = \frac{1}{\sqrt{2\pi\sigma^2_j}} \exp\left(-\frac{(x_j - \mu_j)^2}{2\sigma^2_j}\right)$$
+```$
+p(x_j; \mu_j, \sigma^2_j) = \frac{1}{\sqrt{2\pi\sigma^2_j}} \exp\left(-\frac{(x_j - \mu_j)^2}{2\sigma^2_j}\right)
+```
 
 A standard multivariate Gaussian anomaly detector multiplies these per-feature densities together (assuming feature independence). The implementation in this chapter uses a slight variation: it computes the **arithmetic mean** of the per-feature PDFs rather than their product. This has the practical benefit of keeping the resulting numbers on a comfortable scale (avoiding vanishingly small products when there are many features) while still giving a monotone score suitable for thresholding.
 
 The training procedure is straightforward:
 
 1. **Split** the examples into training (~60%), cross-validation (~20%), and test (~20%) sets. The training set is filtered to contain mostly normal examples.
-2. **Fit** the per-feature mean $\mu_j$ and variance $\sigma^2_j$ using only the training set.
-3. **Sweep** many candidate values of $\epsilon$ and pick the one that yields the fewest misclassifications on the cross-validation set.
-4. **Evaluate** the final model on the held-out test set, reporting precision, recall, and $F_1$-score.
+2. **Fit** the per-feature mean `\mu_j`$ and variance `\sigma^2_j`$ using only the training set.
+3. **Sweep** many candidate values of `\epsilon`$ and pick the one that yields the fewest misclassifications on the cross-validation set.
+4. **Evaluate** the final model on the held-out test set, reporting precision, recall, and `F_1`$-score.
 
-A key trick used here (following Andrew Ng's classic Coursera Machine Learning lectures) is that we deliberately let a small number of anomalous examples leak into the CV and test sets - they are essential for tuning $\epsilon$ and for measuring recall.
+A key trick used here (following Andrew Ng's classic Coursera Machine Learning lectures) is that we deliberately let a small number of anomalous examples leak into the CV and test sets - they are essential for tuning `\epsilon`$ and for measuring recall.
 
 ## The Dataset
 
@@ -81,7 +83,7 @@ We start with the imports and exports. The `:std/format` module gives us `format
 (def SQRT_2_PI (sqrt (* 2.0 (acos -1.0))))
 ```
 
-The constant `SQRT_2_PI` is precomputed once as $\sqrt{2\pi}$ because it appears in the denominator of every Gaussian PDF evaluation. Note the small trick `(acos -1.0)` to obtain $\pi$ without hardcoding a magic number.
+The constant `SQRT_2_PI` is precomputed once as `\sqrt{2\pi}`$ because it appears in the denominator of every Gaussian PDF evaluation. Note the small trick `(acos -1.0)` to obtain `\pi`$ without hardcoding a magic number.
 
 ### Decimal Formatting Helpers
 
@@ -116,7 +118,7 @@ Gerbil's default number printing yields long decimal expansions (like `0.8571428
           formatted-str)))))
 ```
 
-`format-decimal` multiplies by $10^{\text{places}}$, rounds to the nearest integer, divides back, then post-processes the string to zero-pad the fractional part and prepend a leading `0` when necessary. The result is a stable, readable representation like `"0.8571"`.
+`format-decimal` multiplies by `10^{\text{places}}`$, rounds to the nearest integer, divides back, then post-processes the string to zero-pad the fractional part and prepend a leading `0` when necessary. The result is a stable, readable representation like `"0.8571"`.
 
 ### Splitting the Data
 
@@ -190,7 +192,7 @@ Notice that the outer loop terminates at `(- nf 1)` rather than `nf`. This delib
 
 ### The Gaussian Score
 
-The `gaussian-p` function computes the density score used for classification. As mentioned above, it takes the **arithmetic mean** of the per-feature Gaussian PDFs rather than their product. This is the score we will threshold with $\epsilon$:
+The `gaussian-p` function computes the density score used for classification. As mentioned above, it takes the **arithmetic mean** of the per-feature Gaussian PDFs rather than their product. This is the score we will threshold with `\epsilon`$:
 
 ```scheme
 ;; Average Gaussian PDF p(x) across all features
@@ -206,7 +208,7 @@ The `gaussian-p` function computes the density score used for classification. As
 
 ### Assembling the Detector
 
-`build-detector` is the constructor. It takes raw labelled examples, splits them, computes $\mu$, and stashes everything into a hash table that carries the model state:
+`build-detector` is the constructor. It takes raw labelled examples, splits them, computes `\mu`$, and stashes everything into a hash table that carries the model state:
 
 ```scheme
 ;; Build a detector from labelled examples
@@ -230,7 +232,7 @@ The `gaussian-p` function computes the density score used for classification. As
 
 ### The Threshold Sweep
 
-The core of training is to try many candidate values of $\epsilon$ and pick the one that produces the fewest classification errors on the cross-validation set. `train-helper` recomputes $\sigma^2$ (from the training set) and counts CV errors for a given epsilon:
+The core of training is to try many candidate values of `\epsilon`$ and pick the one that produces the fewest classification errors on the cross-validation set. `train-helper` recomputes `\sigma^2`$ (from the training set) and counts CV errors for a given epsilon:
 
 ```scheme
 (def (train-helper det epsilon)
@@ -252,11 +254,11 @@ The core of training is to try many candidate values of $\epsilon$ and pick the 
     errors))
 ```
 
-The subtle bit is the inner `if`: for a true anomaly, an error occurs when the score is *above* $\epsilon$ (we called it normal); for a true normal, an error occurs when the score is *below* $\epsilon$ (we called it anomalous).
+The subtle bit is the inner `if`: for a true anomaly, an error occurs when the score is *above* `\epsilon`$ (we called it normal); for a true normal, an error occurs when the score is *below* `\epsilon`$ (we called it anomalous).
 
 ### Test-Set Evaluation
 
-`test-model` runs the full confusion matrix on the held-out test set and prints precision, recall, and $F_1$:
+`test-model` runs the full confusion matrix on the held-out test set and prints precision, recall, and `F_1`$:
 
 ```scheme
 ;; Evaluate model on test data
@@ -291,7 +293,7 @@ The subtle bit is the inner `if`: for a true anomaly, an error occurs when the s
 
 ### The Top-Level Training Loop and Anomaly Predicate
 
-Finally, `train` sweeps 200 values of $\epsilon$ starting from `0.001` in increments of `0.005`, keeps the value that minimized CV errors, then evaluates on the test set:
+Finally, `train` sweeps 200 values of `\epsilon`$ starting from `0.001` in increments of `0.005`, keeps the value that minimized CV errors, then evaluates on the test set:
 
 ```scheme
 ;; Sweep 200 epsilon values, pick best, evaluate on test set
@@ -363,10 +365,10 @@ Empty lines are silently skipped, which makes the loader forgiving of trailing n
 Raw integer scores from 1 to 10 are not ideal for Gaussian modeling - the features are heavily skewed, with many observations pinned at `1`. The preprocessing pipeline in `preprocess-wisconsin` applies three transformations to each row:
 
 1. **Scale down** the raw features (indices 0-8) by 0.1, moving them into a smaller numeric range.
-2. **Log-transform** each feature as $\log(x + 1.2)$. The additive constant prevents $\log(0)$ and softens the tail.
-3. **Per-row min-max scale** the features to the interval $[0, 1]$, so no feature dominates the Gaussian by virtue of its raw magnitude.
+2. **Log-transform** each feature as `\log(x + 1.2)`$. The additive constant prevents `\log(0)`$ and softens the tail.
+3. **Per-row min-max scale** the features to the interval `[0, 1]`$, so no feature dominates the Gaussian by virtue of its raw magnitude.
 
-The target column is separately remapped from $\{2.0, 4.0\}$ to $\{0.0, 1.0\}$:
+The target column is separately remapped from `\{2.0, 4.0\}`$ to `\{0.0, 1.0\}`$:
 
 ```scheme
 ;; Log-transform, per-row min-max scaling, remap target {2,4} -> {0,1}
@@ -407,7 +409,7 @@ The target column is separately remapped from $\{2.0, 4.0\}$ to $\{0.0, 1.0\}$:
 
 ### The Main Entry Point
 
-The `main` function ties everything together: load the CSV, preprocess, build the detector, train it (which internally sweeps $\epsilon$ and evaluates on test), then run a couple of light sanity checks:
+The `main` function ties everything together: load the CSV, preprocess, build the detector, train it (which internally sweeps `\epsilon`$ and evaluates on test), then run a couple of light sanity checks:
 
 ```scheme
 (def (main)
@@ -488,7 +490,7 @@ The output reports several important quantities.
 - **TP=24 FP=4 FN=1 TN=39**: the confusion matrix on the 68-observation test set. `TP` (true positive) is a correctly-identified malignant case, `FN` (false negative) is a missed malignant case, `FP` (false positive) is a benign case wrongly flagged, and `TN` (true negative) is a correctly-identified benign case.
 - **precision = 0.8571**: of the 28 observations the model called "anomaly", 24 were truly malignant. Precision answers "when the model raises an alarm, how often is it right?"
 - **recall = 0.9600**: of the 25 truly malignant observations, the model caught 24. Recall answers "of all the actual anomalies, how many did we catch?"
-- **$F_1$ = 0.9057**: the harmonic mean of precision and recall. $F_1$ is a single-number summary of overall detection quality when both false positives and false negatives matter.
+- **`F_1`$ = 0.9057**: the harmonic mean of precision and recall. `F_1`$ is a single-number summary of overall detection quality when both false positives and false negatives matter.
 
 The recall value is particularly encouraging in a medical setting - missing a malignant tumor is a much more costly mistake than a false alarm, so a recall above 0.95 is a genuinely useful outcome.
 
@@ -498,8 +500,8 @@ We built a full-featured Gaussian anomaly detection engine in Gerbil Scheme in f
 
 - Fit a Gaussian per feature on your normal data.
 - Use the density function as a score.
-- Use a held-out cross-validation set with a few real anomalies in it to pick the best classification threshold $\epsilon$.
-- Report precision, recall, and $F_1$ on a completely held-out test set.
+- Use a held-out cross-validation set with a few real anomalies in it to pick the best classification threshold `\epsilon`$.
+- Report precision, recall, and `F_1`$ on a completely held-out test set.
 
 Gerbil Scheme turns out to be a comfortable environment for this kind of numerical work. Vectors give us cheap random-access storage, hash tables give us a natural home for the trained model's state, and the top-level `def` / `import` / `export` module system keeps `detector.ss` cleanly reusable across different datasets. Try pointing `wisconsin_demo.ss` at your own CSV data - as long as the last column is a binary anomaly label, the detector will happily consume it.
 
@@ -507,10 +509,10 @@ Gerbil Scheme turns out to be a comfortable environment for this kind of numeric
 
 1. **Product-of-PDFs Score**: `gaussian-p` currently returns the arithmetic mean of the per-feature PDFs. Add a new function `gaussian-p-product` that instead returns the classical multivariate Gaussian score (the product of the per-feature PDFs) and compare its precision/recall/F1 against the mean-based score on the Wisconsin dataset.
 
-2. **Sensitivity to the Preprocessing Pipeline**: In `preprocess-wisconsin`, remove the log-transform step (leave only the `*0.1` scaling and the min-max normalization). Re-run the demo and report how the best $\epsilon$, precision, recall, and $F_1$ change. Explain why the log-transform helps or hurts.
+2. **Sensitivity to the Preprocessing Pipeline**: In `preprocess-wisconsin`, remove the log-transform step (leave only the `*0.1` scaling and the min-max normalization). Re-run the demo and report how the best `\epsilon`$, precision, recall, and `F_1`$ change. Explain why the log-transform helps or hurts.
 
 3. **Configurable Sweep Range**: Modify `train` in `detector.ss` to accept optional keyword arguments `eps-start`, `eps-step`, and `eps-count` so users can control the epsilon sweep without editing the source. Provide sensible defaults matching the current behavior (0.001, 0.005, 200).
 
-4. **Save and Load a Trained Detector**: Implement `save-detector` and `load-detector` functions in `detector.ss` that serialize the trained $\mu$, $\sigma^2$, `best-eps`, and `num-features` to a plain-text file and read them back in a later session, so that training does not need to be repeated to classify new observations.
+4. **Save and Load a Trained Detector**: Implement `save-detector` and `load-detector` functions in `detector.ss` that serialize the trained `\mu`$, `\sigma^2`$, `best-eps`, and `num-features` to a plain-text file and read them back in a later session, so that training does not need to be repeated to classify new observations.
 
 5. **Try a Different Dataset**: The KDD Cup 1999 network intrusion dataset is a classic benchmark for anomaly detection. Write a `kdd_demo.ss` that mimics `wisconsin_demo.ss` for a subset of the KDD data, including any needed preprocessing (categorical features must be converted to numeric form). Report how well the detector performs.
