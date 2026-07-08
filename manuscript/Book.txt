@@ -12,3 +12,4 @@ webkit.md
 RDF_simple.md
 command_line.md
 command_nlp.md
+anomaly-detection.md
