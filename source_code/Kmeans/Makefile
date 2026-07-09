@@ -1,0 +1,2 @@
+test:
+	gxi test.ss
