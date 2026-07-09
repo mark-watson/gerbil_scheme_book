@@ -72,8 +72,8 @@ The project directory `source_code/reinforcement-learning` contains:
 
 | File | Description |
 |------|-------------|
-| `mdp_demo.ss` | Value Iteration on a deterministic `3 \times 3`$ grid world. |
-| `frozen_lake_qlearning.ss` | Q-Learning on the stochastic `4 \times 4`$ FrozenLake environment. |
+| `mdp_demo.ss` | Value Iteration on a deterministic `3x3` grid world. |
+| `frozen_lake_qlearning.ss` | Q-Learning on the stochastic `4x4` FrozenLake environment. |
 | `Makefile` | Two targets: `run-mdp` and `run-qlearning`. |
 | `gerbil.pkg` | Package declaration. |
 
@@ -292,7 +292,7 @@ Iterations: 154
 
 ### Interpreting the Value Iteration Results
 
-- **Optimal policy arrows** show the greedy action from every cell. From the top-left corner (cell 0) the best action is RIGHT, which begins the path 0 → 1 → 2 → 5 → 8. Even though cell 5 is a trap, the policy is willing to accept the -5 penalty once because reaching the goal is worth so much more.
+- **Optimal policy arrows** show the greedy action from every cell. From the top-left corner (cell 0) the best action is RIGHT, which begins the path 0 -> 1 -> 2 -> 5 -> 8. Even though cell 5 is a trap, the policy is willing to accept the -5 penalty once because reaching the goal is worth so much more.
 - **Value function**: cell 8 has value 100.0, which is the goal reward of 10 amplified through the loop where every action from cell 8 collects another +10 discounted by `\gamma = 0.9`$. The infinite geometric series `10 + 9 + 8.1 + \dots`$ sums to exactly `10 / (1 - 0.9) = 100`$.
 - **Value monotonicity**: values decrease with distance from the goal, from 100.0 at cell 8 down to 65.61 at cell 0. Each step away from the goal multiplies the payoff by `\gamma`$.
 - **Cell 5 = 85.0**: even though cell 5 is a trap, its value is still positive and high, because from cell 5 you can immediately move DOWN into the goal at cell 8. The trap penalty is paid once, but the goal payoff dominates.

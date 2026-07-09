@@ -1,6 +1,1 @@
-anomaly-detection.md
 kmeans.md
-chess-game.md
-Daily_use_AI_assistant.md
-ReinforcementLearning.md
-WebScraping.md

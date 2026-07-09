@@ -890,8 +890,6 @@ A natural next step is to extend the search with **null move pruning** (trying a
 
 ## Practice Problems
 
-{exercise, type: "coding"}
-
 **Exercise 1: Display Board State as Unicode Art**
 
 Write a Gerbil Scheme function `board->string` that returns the current board position as a multi-line string of Unicode chess glyphs with rank numbers and file letters, but without any ANSI color codes. The function should be suitable for logging or writing the board to a file. Use the `glyphs` vector from `cli.ss` for piece rendering.
@@ -910,17 +908,10 @@ Expected output for the starting position:
   a b c d e f g h
 ```
 
-{/exercise}
-
-{exercise, type: "coding"}
 
 **Exercise 2: Count Attacked Squares**
 
 Using `is-square-attacked?` from `engine.ss`, write a function `count-attacked-squares` that takes a board `b` and a color (WHITE or BLACK) and returns the number of squares on the board that are attacked by that color. Run it on the starting position for both colors and verify that the results are equal (by symmetry).
-
-{/exercise}
-
-{exercise, type: "coding"}
 
 **Exercise 3: Perft Divide**
 
@@ -934,9 +925,6 @@ b2b3:  9345
 Total: 8902
 ```
 
-{/exercise}
-
-{exercise, type: "coding"}
 
 **Exercise 4: Material Balance Reporter**
 
@@ -950,12 +938,8 @@ Advantage: even
 
 If one side is ahead, print the advantage in pawn units (e.g., `White +1.5`). Use this function to instrument the bot-vs-bot loop, printing the material report after every ten moves.
 
-{/exercise}
-
-{exercise, type: "coding"}
 
 **Exercise 5: Opening Book Integration**
 
 Create a simple opening book as a Gerbil hash table mapping FEN strings (of positions after 0, 1, and 2 moves) to a list of UCI move strings. Modify `get-best-move` in `ai.ss` to check the book first and, if the current position is in the book, pick a random move from the list rather than running the search. Seed the book with at least three openings (e.g., `1. e4`, `1. d4`, and `1. Nf3`) and their most common replies. Verify that the bot plays book moves from the starting position.
 
-{/exercise}
