@@ -1,8 +1,8 @@
 # Building a Chess Engine and AI Bot
 
-Chess has served as a benchmark problem for artificial intelligence since the very birth of the field. Alan Turing described a paper chess-playing algorithm in 1950, and Claude Shannon published the foundational framework for computer chess the same year. Today, engines like Stockfish and Leela Chess Zero play at levels far beyond any human grandmaster, but the algorithmic ideas they are built upon — board representation, legal move generation, alpha-beta search, and positional evaluation — are surprisingly accessible. Building a chess engine from scratch is one of the most complete exercises in applied computer science: it demands careful data structure design, recursive search, hashing, and incremental state management all in a single coherent program.
+Chess has served as a benchmark problem for artificial intelligence since the very birth of the field. Alan Turing described a paper chess-playing algorithm in 1950, and Claude Shannon published the foundational framework for computer chess the same year. Today, engines like Stockfish and Leela Chess Zero play at levels far beyond any human grandmaster, but the algorithmic ideas they are built upon, such as board representation, legal move generation, alpha-beta search, and positional evaluation, are surprisingly accessible. Building a chess engine from scratch is one of the most complete exercises in applied computer science: it demands careful data structure design, recursive search, hashing, and incremental state management all in a single coherent program.
 
-In this chapter we implement a fully playable chess engine and AI bot in Gerbil Scheme — three modules totalling roughly 900 lines of code. The engine correctly handles every rule of chess, including en passant, castling, pawn promotion, and the fifty-move draw rule. The AI opponent uses iterative deepening negamax search with alpha-beta pruning, a transposition table for caching previously evaluated positions, a quiescence search to avoid the horizon effect on captures, and piece-square tables that encode positional knowledge. The interactive command-line interface renders a coloured Unicode board in the terminal and accepts moves in Universal Chess Interface (UCI) notation.
+In this chapter we implement a fully playable chess engine and AI bot in Gerbil Scheme that consists of three modules totaling roughly 900 lines of code. The engine correctly handles every rule of chess, including en passant, castling, pawn promotion, and the fifty-move draw rule. The AI opponent uses iterative deepening negamax search with alpha-beta pruning, a transposition table for caching previously evaluated positions, a quiescence search to avoid the horizon effect on captures, and piece-square tables that encode positional knowledge. The interactive command-line interface renders a coloured Unicode board in the terminal and accepts moves in Universal Chess Interface (UCI) notation.
 
 ## Theoretical Background
 
@@ -16,7 +16,7 @@ piece = color | type
 
 The type codes are 0 (empty) through 6 (king). White is encoded as 8 and black as 16. To extract the type from a piece value `p` we compute `p AND 7`; to extract the color we compute `p AND 24`. This simple two-field encoding eliminates branch-heavy conditionals and maps naturally to Gerbil's `bitwise-and`, `bitwise-ior`, and `bitwise-xor` primitives.
 
-In addition to the board grid, the engine maintains an **active piece list** — two lists of occupied square indices, one per color. This means that when generating moves for white, the engine iterates only over white's active squares rather than all 64 squares, a constant-factor speedup that matters at high search depths.
+In addition to the board grid, the engine maintains an **active piece list** consisting of two lists of occupied square indices, one per color. This means that when generating moves for white, the engine iterates only over white's active squares rather than all 64 squares, a constant-factor speedup that matters at high search depths.
 
 ### Precomputed Move Tables
 
@@ -26,7 +26,7 @@ A naive move generator re-derives the set of reachable squares for each piece on
 
 Searching a chess position requires quickly comparing positions to detect repetitions and to look up previously evaluated results in a transposition table. A naive equality check over all 64 squares is O(64); Zobrist hashing reduces this to O(1) by maintaining a 64-bit integer that uniquely identifies (with overwhelmingly high probability) the current board state.
 
-The Zobrist scheme assigns a random 64-bit number to each (square, piece) combination at startup — 64 squares times 32 possible piece encodings gives 2048 numbers. The board hash is the XOR of all the numbers corresponding to occupied squares. Critically, XOR is self-inverse: making a move that removes a piece from square `s` simply XORs out `zobrist[s][piece]`, and placing the new piece XORs in the new value. Additional random numbers encode whose turn it is, the four castling rights, and the en-passant file. This incremental update strategy keeps the hash cost per move to a handful of XOR operations.
+The Zobrist scheme assigns a random 64-bit number to each (square, piece) combination at startup that consists of 64 squares times 32 possible piece encodings gives 2048 numbers. The board hash is the XOR of all the numbers corresponding to occupied squares. Critically, XOR is self-inverse: making a move that removes a piece from square `s` simply XORs out `zobrist[s][piece]`, and placing the new piece XORs in the new value. Additional random numbers encode whose turn it is, the four castling rights, and the en-passant file. This incremental update strategy keeps the hash cost per move to a handful of XOR operations.
 
 ### Negamax Search with Alpha-Beta Pruning
 
@@ -34,8 +34,8 @@ A chess engine evaluates a position by searching forward through possible move s
 
 Searching the full game tree is computationally infeasible. **Alpha-beta pruning** cuts large portions of the tree without affecting the result. Two bounds are passed through the recursion:
 
-- `alpha` — the best score the maximizer can guarantee so far.
-- `beta` — the best score the minimizer can guarantee so far.
+- `alpha`: the best score the maximizer can guarantee so far.
+- `beta`: the best score the minimizer can guarantee so far.
 
 Whenever `alpha >= beta`, the current subtree cannot influence the final result, and search is abandoned. In the best case, with perfect move ordering, alpha-beta reduces the effective branching factor from `b` to `sqrt(b)`, roughly doubling the searchable depth within the same time budget.
 
@@ -47,8 +47,8 @@ Whenever `alpha >= beta`, the current subtree cannot influence the final result,
 
 When search reaches a leaf node, it calls a static evaluation function that returns a score in centipawns (one hundredth of a pawn value). The evaluation in this engine has two components:
 
-1. **Material count** — the sum of piece values: pawn=100, knight=320, bishop=330, rook=500, queen=900, king=20000 (effectively infinite).
-2. **Piece-square table (PST) bonuses** — each piece type has an 8×8 table of bonus/penalty values expressing positional preferences. Knights are penalized on the rim and rewarded in the center. Pawns are rewarded for advancement toward the seventh rank. Kings are penalized for exposure in the middlegame but rewarded for active central play in the endgame.
+1. **Material count**: the sum of piece values: pawn=100, knight=320, bishop=330, rook=500, queen=900, king=20000 (effectively infinite).
+2. **Piece-square table (PST) bonuses**: each piece type has an 8×8 table of bonus/penalty values expressing positional preferences. Knights are penalized on the rim and rewarded in the center. Pawns are rewarded for advancement toward the seventh rank. Kings are penalized for exposure in the middlegame but rewarded for active central play in the endgame.
 
 The engine detects the endgame by summing non-pawn, non-king material; when it falls below 3000 centipawns, the king PST switches to an endgame table that favors central activity.
 
@@ -139,7 +139,7 @@ The `piece-type` and `piece-color` helpers simply mask out the relevant bits of 
 
 The board uses a linear index where square `sq = rank * 8 + file`, with rank 0 being the first rank (White's back rank) and file 0 being the `a` file. The `square-names` vector maps 0–63 to UCI strings like `"a1"`, and `name-to-square` is the reverse hash table.
 
-The precomputed tables are filled by a startup loop. For knights and kings the loop generates the short fixed offsets. For sliding pieces (rook, bishop, queen), it generates **rays** — ordered lists of squares in each direction, stopping at the board boundary:
+The precomputed tables are filled by a startup loop. For knights and kings the loop generates the short fixed offsets. For sliding pieces (rook, bishop, queen), it generates **rays** that are ordered lists of squares in each direction, stopping at the board boundary:
 
 ```scheme
 (do ((sq 0 (+ sq 1)))
@@ -174,7 +174,7 @@ The precomputed tables are filled by a startup loop. For knights and kings the l
     ))
 ```
 
-Each element of `rook-rays` at index `sq` is a list of four rays, each ray being a list of square indices in order from `sq` outward. When the move generator walks a ray and hits a piece, it stops — no squares past that piece are accessible.
+Each element of `rook-rays` at index `sq` is a list of four rays, each ray being a list of square indices in order from `sq` outward. When the move generator walks a ray and hits a piece, it stops so no squares past that piece are accessible.
 
 ### Zobrist Hashing
 
@@ -205,7 +205,7 @@ The engine uses a deterministic 64-bit linear congruential generator (LCG) to pr
 (def ZOBRIST_EP (make-vector 64))         ; indexed by en-passant square
 ```
 
-The `board-compute-zobrist-hash` function builds the full hash from scratch by iterating over occupied squares. In practice this is only called once, when a position is loaded from FEN. All subsequent hash updates are incremental — the `board-make-move!` function XORs out moved/captured pieces and XORs in their new values before updating the board state.
+The `board-compute-zobrist-hash` function builds the full hash from scratch by iterating over occupied squares. In practice this is only called once, when a position is loaded from FEN. All subsequent hash updates are incremental: the `board-make-move!` function XORs out moved/captured pieces and XORs in their new values before updating the board state.
 
 ### Board and Move Structures
 
@@ -352,7 +352,7 @@ The `board-make-move!` function returns a `board-state` snapshot before modifyin
   ...)
 ```
 
-The Zobrist hash is restored simply by copying it from the snapshot — there is no need to re-derive it, since it was saved before any move was applied. Castling unmake moves the rook back from its castled position; en-passant unmake restores the captured pawn to its original square.
+The Zobrist hash is restored simply by copying it from the snapshot so there is no need to re-derive it, since it was saved before any move was applied. Castling unmake moves the rook back from its castled position; en-passant unmake restores the captured pawn to its original square.
 
 ## The AI Module: ai.ss
 
@@ -360,7 +360,7 @@ The AI module imports the engine and adds everything needed to select a strong m
 
 ### Piece-Square Tables
 
-Each piece type has an 8×8 table of centipawn bonus/penalty values expressing positional preferences. The tables are written from White's perspective (rank 1 at the bottom), and Black's scores are looked up with `logxor sq 56` — a simple XOR that mirrors the square index vertically.
+Each piece type has an 8×8 table of centipawn bonus/penalty values expressing positional preferences. The tables are written from White's perspective (rank 1 at the bottom), and Black's scores are looked up with `logxor sq 56` that is a simple XOR that mirrors the square index vertically.
 
 ```scheme
 ;; File: ai.ss
@@ -535,7 +535,7 @@ The core search function implements negamax with alpha-beta pruning and transpos
                            (max current-alpha score))))))))))))
 ```
 
-Checkmate is detected by an empty legal move list combined with the king being in check. The score `(- -30000 (- max-depth depth))` encodes "checkmate in N moves" — positions with faster checkmates score higher (closer to -30000) because `(- max-depth depth)` is smaller when the mate happens sooner. This allows the engine to prefer forced mates over equivalent material wins.
+Checkmate is detected by an empty legal move list combined with the king being in check. The score `(- -30000 (- max-depth depth))` encodes "checkmate in N moves" so positions with faster checkmates score higher (closer to -30000) because `(- max-depth depth)` is smaller when the mate happens sooner. This allows the engine to prefer forced mates over equivalent material wins.
 
 ### Quiescence Search
 
@@ -568,7 +568,7 @@ The quiescence extension searches only captures (and promotions) past the nomina
            ...))))))
 ```
 
-The **stand-pat** score is the static evaluation without making any further capture. If the stand-pat already beats beta, the position is returned immediately — the opponent would not have allowed reaching this node in the first place. This is the quiescence equivalent of alpha-beta pruning.
+The **stand-pat** score is the static evaluation without making any further capture. If the **stand-pat** already beats beta, the position is returned immediately because the opponent would not have allowed reaching this node in the first place. This is the quiescence equivalent of alpha-beta pruning.
 
 ### Iterative Deepening
 
@@ -862,7 +862,7 @@ Bot plays: g1f3 | eval: 0.4 | nodes: 79810 | time: 1.1s
 
 ### Perft Node Counts
 
-The perft numbers are not arbitrary. At depth 1, exactly 20 moves are legal from the starting position: 16 pawn moves (two squares or one square for each of the eight pawns) and 4 knight moves. At depth 2, all 20 of white's replies also have 20 legal responses (by symmetry of the starting position), giving 400. At depth 3, 8902 nodes are reached — the divergence from `20^3 = 8000` arises because of en-passant possibilities created by the depth-2 double pawn pushes, and because some positions at depth 2 allow more than 20 responses.
+The perft numbers are not arbitrary. At depth 1, exactly 20 moves are legal from the starting position: 16 pawn moves (two squares or one square for each of the eight pawns) and 4 knight moves. At depth 2, all 20 of white's replies also have 20 legal responses (by symmetry of the starting position), giving 400. At depth 3, 8902 nodes are reached. Note that the divergence from `20^3 = 8000` arises because of en-passant possibilities created by the depth-2 double pawn pushes, and because some positions at depth 2 allow more than 20 responses.
 
 A perft FAIL at depth 1 almost always indicates an error in basic piece movement. A FAIL at depth 3 that passes depths 1 and 2 typically points to a bug in en-passant, castling, or promotion handling, since those edge cases first appear at depth 3.
 
@@ -884,7 +884,7 @@ On top of this engine we layered an AI search that combines iterative deepening 
 
 The project demonstrates several Gerbil Scheme idioms worth carrying into other programs: aliasing long function names for readability, using `defstruct` with `transparent: #t` for easily printed structures, combining `do` loops for startup initialization with recursive `lambda` for runtime logic, and the make/unmake pattern for reversible state mutation that avoids copying large data structures during search.
 
-The perft suite provides a disciplined correctness gate — a chess engine that passes all three depths is move-generation correct. The bot at depth 4 produces recognizable opening play (1. e4 e5 2. Nf3 followed by natural development) and will consistently defeat beginners, making this a satisfying demonstration of how much strategic behavior emerges from a relatively simple evaluation function combined with deep search.
+The perft suite provides a disciplined correctness gate and a chess engine that passes all three depths is move-generation correct. The bot at depth 4 produces recognizable opening play (1. e4 e5 2. Nf3 followed by natural development) and will consistently defeat beginners, making this a satisfying demonstration of how much strategic behavior emerges from a relatively simple evaluation function combined with deep search.
 
 A natural next step is to extend the search with **null move pruning** (trying a pass move to detect positions where the opponent has no effective threats) and **late move reductions** (searching the last few moves at a reduced depth), which together can double the effective search depth at no additional node cost.
 
