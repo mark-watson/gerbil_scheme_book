@@ -53,3 +53,9 @@ gxi test.ss
 ```
 
 The demo generates three well-separated Gaussian blobs, fits k-means with `k=3`, prints the learned centroids and cluster sizes, and classifies four fresh probe points.
+
+Another test2.ss test:
+
+```
+gxi test2.ss
+```
