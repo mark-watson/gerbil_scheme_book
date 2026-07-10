@@ -4,7 +4,7 @@ I have used Lisp languages since the late 1970s, Common Lisp and Clojure profess
 
 ## New Material Added in Latest Edition
 
-This edition adds five new chapters covering practical AI and programming topics: **Anomaly Detection**, **Chess Game** (implementing a chess engine), **Daily Use AI Assistant** (building a personal AI assistant for everyday tasks), **Reinforcement Learning**, and **Web Scraping**. These chapters extend the book's focus on applying Gerbil Scheme to real-world problems and modern AI use cases as well as having fun writing a Chess playing program.
+This edition adds five new chapters covering practical AI and programming topics: **Anomaly Detection**, **K-means** machine learning,  **Chess Game** (implementing a chess engine), **Daily Use AI Assistant** (building a personal AI assistant for everyday tasks), **Reinforcement Learning**, and **Web Scraping**. These chapters extend the book's focus on applying Gerbil Scheme to real-world problems and modern AI use cases as well as having fun writing a Chess playing program.
 
 Both the source code examples and the manuscript files for this book are maintained in a single GitHub repository: [https://github.com/mark-watson/gerbil_scheme_book](https://github.com/mark-watson/gerbil_scheme_book). I recommend that you keep a local copy:
 

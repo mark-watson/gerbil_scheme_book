@@ -1,6 +1,6 @@
 # Gaussian Anomaly Detection
 
-Anomaly detection is one of the most practical applications of unsupervised and semi-supervised machine learning. Please note dear reader that the next chapter introduces K-means that is another useful Simi-supervised machine learning.
+Anomaly detection is one of the most practical applications of unsupervised and semi-supervised machine learning. Please note dear reader that the next chapter introduces K-means that is another useful semi-supervised machine learning.
 
 Rather than asking "what class does this belong to?", we ask a subtler and often more useful question: "does this observation look like the ones I have already seen?" In fraud detection, manufacturing quality control, medical diagnostics, network intrusion monitoring, and predictive maintenance, the interesting events are usually rare. Trying to build a supervised classifier for events that occur one time in a thousand often fails: there are simply not enough positive examples to learn a good decision boundary. Anomaly detection sidesteps this problem entirely by modeling the *normal* distribution of data and flagging observations that fall outside it.
 
