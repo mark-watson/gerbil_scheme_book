@@ -1,6 +1,8 @@
 # K-means Clustering
 
-The previous chapter on Gaussian anomaly detection asked "does this observation look like the ones I have already seen?". K-means clustering asks a different unsupervised question: "if I had to sort these observations into `k`$ groups, what would the most natural grouping be?" Neither question requires labelled training data. Both are workhorses of exploratory data analysis, customer segmentation, image compression, document organization, and preprocessing for downstream supervised models.
+The previous chapter on Gaussian anomaly detection asked "does this observation look like the ones I have already seen?". K-means clustering asks a different unsupervised question: "if I had to sort these observations into `k` groups, what would the most natural grouping be?" Neither question requires labelled training data. Both are workhorses of exploratory data analysis, customer segmentation, image compression, document organization, and preprocessing for downstream supervised models.
+
+Dear reader, one of my 62 US patents covers K-means technology: [System to label K-means clusters with human understandable labels](https://patents.google.com/patent/US11921757B2/en).
 
 In this chapter we build a K-means clustering library from scratch in Gerbil Scheme. The library supports two initialization strategies, multiple random restarts, an inertia-based scoring criterion for picking the best restart, and both `fit` and `predict` operations. We demonstrate it on a synthetic dataset of three Gaussian blobs in the plane, so that the "correct answer" is obvious to the eye and easy to check against the library's output.
 
@@ -236,7 +238,7 @@ Inertia is simply the sum of the squared distances from every point to its assig
           (loop (cdr ps) (+ i 1)))))))
 ```
 
-Convergence is decided by comparing every coordinate of every centroid against its previous value. If all of them have moved less than `tol`, we consider the run converged:
+Convergence is decided by comparing every coordinate of every centroid against its previous value. If all of them have moved less than the tolerance value `tol`, we consider the run converged:
 
 ```scheme
 ;; True if two centroid sets are within tol of each other on every coordinate.
