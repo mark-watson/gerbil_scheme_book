@@ -12,3 +12,6 @@ test1:
 
 run-agent1:
 	WDQS_UA="$${WDQS_UA:-YourApp/1.0 (https://your.site; you@site)}" gxi -L wikidata.ss -e "(test1-ua)"
+
+clean:
+	rm -rf .gerbil *~

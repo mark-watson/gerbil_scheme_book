@@ -3,3 +3,6 @@ run-qlearning:
 
 run-mdp:
 	gxi mdp_demo.ss
+
+clean:
+	rm -rf .gerbil *~
