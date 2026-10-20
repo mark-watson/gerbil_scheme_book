@@ -13,7 +13,11 @@ SRC_M = webkit_cl.m
 
 # Gerbil compile flags — link against the dylib
 GERBIL_CC_OPTS = -I$(CURDIR)
+# The Homebrew Gerbil build hardcodes a stale OpenSSL Cellar path
+# (e.g. openssl@3/3.2.1), so add the current OpenSSL lib dir explicitly.
+OPENSSL_LIB ?= $(shell brew --prefix openssl@3 2>/dev/null || echo /opt/homebrew/opt/openssl@3)/lib
 GERBIL_LD_OPTS = -L$(CURDIR) -lwebkit_cl -Wl,-rpath,@loader_path \
+                 -L$(OPENSSL_LIB) \
                  -framework Cocoa -framework WebKit
 
 .PHONY: all clean dylib examples hello counter viewer
