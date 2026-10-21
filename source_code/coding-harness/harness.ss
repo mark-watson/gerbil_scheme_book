@@ -1,19 +1,20 @@
 ;;; Copyright (C) 2026 Mark Watson <markw@markwatson.com>
 ;;; Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 ;;;
-;;; harness.ss -- a coding agent for Gerbil Scheme projects: REPL, slash
-;;; commands, one-shot CLI.
+;;; harness.ss -- a coding agent for Gerbil Scheme, Python, Haskell,
+;;; TypeScript, JavaScript (and, with less help, any other language): REPL,
+;;; slash commands, one-shot CLI.
 ;;;
 ;;;   gxi harness.ss                       interactive REPL
 ;;;   gxi harness.ss "add a test for foo"  one-shot
 ;;;   gxi harness.ss --help
 ;;;
 ;;; Based on the general-purpose coding-agent harness from "Practical
-;;; Artificial Intelligence Development With Racket", narrowed and deepened
-;;; for Gerbil: a Gerbil-specific system prompt with the gerbil-expert skill
-;;; loaded by default, Gerbil-aware tools (check_parens, outline_file,
-;;; find_definition, search_examples, gxi_eval), and an edit gate where
-;;; syntax errors after `make check` go to the user, not the model.
+;;; Artificial Intelligence Development With Racket". The project language
+;;; (lang.ss) supplies the idioms in the system prompt, an optional skill,
+;;; language-aware tools (check_delimiters, outline_file, find_definition,
+;;; eval_code, search_examples), and the syntax-error rules of the edit gate,
+;;; where syntax errors after `make check` go to the user, not the model.
 
 (import :std/sugar
         :std/format
@@ -23,6 +24,7 @@
         "config"
         "util"
         "parens"
+        "lang"
         "approval"
         "llm"
         "checker"
@@ -30,7 +32,7 @@
 
 (export main)
 
-(def VERSION "0.1.0")
+(def VERSION "0.2.0")
 
 ;; Exit codes for scripted (one-shot) use
 (def EXIT-OK 0)
@@ -44,41 +46,23 @@
 ;; System prompt
 
 (def SYSTEM-PROMPT-TEMPLATE #<<END
-You are a coding assistant for Gerbil Scheme (v0.18, built on Gambit), working in the directory {cwd}.
-Write Gerbil Scheme unless the user asks for something else.
+You are a coding assistant working in the directory {cwd}. The project language is {language}; write {language} unless the user asks for something else.
 
 Workflow:
-- Explore before editing: list_dir, outline_file (cheap overview of a .ss file), read_file, find_definition, grep.
-- Unsure of a :std library function's module, name or arguments? Look it up with search_examples (working examples from the Gerbil book) or try it with gxi_eval BEFORE writing code that depends on it.
+- Explore before editing: list_dir, outline_file (cheap overview of a source file), read_file, find_definition, grep.
 - To EDIT a file: read_file it, then call propose_edit with its exact current contents as `old` and the complete new contents as `new`.
 - To CREATE a file: call propose_edit with `old` set to "" (do not read_file a file that does not exist yet).
 - One file per propose_edit call; keep each change focused.
 - After every accepted edit the harness runs `{check}`. If its result says the USER fixed a syntax error by hand, read_file the file again before editing it.
 - If the user rejects an edit, or the check fails for a reason other than syntax, explain what went wrong and fix it or ask; never resubmit the same edit.
-- run_shell only accepts: {whitelist}.
+- run_shell only accepts commands starting with: {whitelist}.
 - When you are done, reply with a short summary of what changed.
 
-Writing correct Gerbil:
-- Delimiters: every ( [ { closes with the matching ) ] }. Keep functions short and nesting shallow, finish each top-level form before starting the next, and count the closers at the end of every top-level form before calling propose_edit. Unbalanced code is shown to the user as an error.
-- File layout: (import ...) then (export ...) then definitions. Local modules: (import "foo") for ./foo.ss. Common standard modules: :std/format (format, printf), :std/sugar (try/catch/finally, hash, while), :std/iter (for, in-range), :std/text/json, :std/net/request, :std/misc/ports (read-file-string), :std/srfi/13 (string-prefix?, string-contains, string-trim-both), :std/sort, :std/pregexp.
-- Define with def: (def (f x (opt 1) key: (key "default")) ...). defstruct for records.
-- Hash tables: make-hash-table, hash-put!, hash-ref (error on a missing key unless given a default), hash-get (#f when missing). Parsed JSON objects have symbol keys and JSON null reads as #!void.
-- [a b c] is list syntax; {method obj} is method-call syntax.
-- srfi-13 string-trim trims only the left side; use string-trim-both.
-- A runnable script does (export main) and (def (main . args) ...); run it with `gxi file.ss args`.
-- Projects should have a Makefile whose `check` target verifies the code (for example `gxc -S -d .gerbil/check *.ss` plus tests) so every edit is checked.
 END
   )
 
 (def COMPACT-SYSTEM-PROMPT
-  "You are a context compactor for a Gerbil Scheme coding assistant. Summarize the conversation into a compact brief that will replace it. Preserve: the user's goals and instructions, decisions made, files created or modified (with paths), important code, check results and outstanding tasks. Dense bullets, no preamble.")
-
-(def (string-replace-all s old new)
-  (let ((i (string-contains s old)))
-    (if i
-      (string-append (substring s 0 i) new
-                     (string-replace-all (substring s (+ i (string-length old)) (string-length s)) old new))
-      s)))
+  "You are a context compactor for a coding assistant. Summarize the conversation into a compact brief that will replace it. Preserve: the user's goals and instructions, decisions made, files created or modified (with paths), important code, check results and outstanding tasks. Dense bullets, no preamble.")
 
 ;; ---------------------------------------------------------------------------
 ;; Skills: ~/.agents/skills/<name>/SKILL.md
@@ -103,12 +87,12 @@ END
 (def loaded-skill (make-parameter #f))   ; (name . chars) when autoloaded
 
 (def (skill-section)
-  (let ((name (gerbil-setting 'skill)))
-    (if (and (use-skill?) (gerbil-setting 'autoload_skill) (string? name) (file-exists? (skill-file name)))
+  (let ((name (setting 'skill)))
+    (if (and (use-skill?) (setting 'autoload_skill) (string? name) (file-exists? (skill-file name)))
       (let ((content (read-file (skill-file name))))
         (loaded-skill (cons name (string-length content)))
-        (format "\n\nReference material -- the '~a' skill (authoritative Gerbil idioms and the APIs of the Gerbil book examples):\n\n~a"
-                name content))
+        (format "\n\nReference material -- the '~a' skill (authoritative ~a idioms and APIs):\n\n~a"
+                name (language-title (current-lang)) content))
       (begin (loaded-skill #f) ""))))
 
 ;; ---------------------------------------------------------------------------
@@ -117,16 +101,28 @@ END
 (def messages (make-parameter []))
 
 (def (system-prompt)
-  (string-append
-   (string-replace-all
-    (string-replace-all
-     (string-replace-all SYSTEM-PROMPT-TEMPLATE "{cwd}" (path-expand (current-directory)))
-     "{check}" (gerbil-setting 'check_command))
-    "{whitelist}" "make, ls, pwd, cat, head, tail, wc, diff, gxc, gxpkg, gerbil")
-   (skill-section)))
+  (let ((lang (current-lang)))
+    (string-append
+     (fold-left (lambda (text kv) (string-replace-all text (car kv) (cdr kv)))
+                SYSTEM-PROMPT-TEMPLATE
+                [(cons "{cwd}" (path-expand (current-directory)))
+                 (cons "{language}" (if (eq? lang (find-language "generic"))
+                                      "not fixed (follow the existing code)"
+                                      (language-title lang)))
+                 (cons "{check}" (setting 'check_command))
+                 (cons "{whitelist}" (string-join (shell-commands) ", "))])
+     (language-prompt lang)
+     (skill-section))))
+
+(def (fold-left f acc lst)
+  (if (null? lst) acc (fold-left f (f acc (car lst)) (cdr lst))))
 
 (def (reset-conversation)
   (messages [(hash (role "system") (content (system-prompt)))]))
+
+;; After /lang: same conversation, new system prompt.
+(def (refresh-system-prompt)
+  (messages (cons (hash (role "system") (content (system-prompt))) (cdr (messages)))))
 
 (def (add-message! msg) (messages (append (messages) [msg])))
 
@@ -224,13 +220,14 @@ END
 (def (print-banner)
   (unless (quiet?)
     (displayln "")
-    (displayln (colorize BOLD (format "Gerbil Coding Harness ~a  --  /help for commands, /quit to exit" VERSION)))
+    (displayln (colorize BOLD (format "Coding Harness ~a  --  /help for commands, /quit to exit" VERSION)))
     (displayln (format "  cwd:      ~a" (path-expand (current-directory))))
+    (displayln (format "  language: ~a" (language-title (current-lang))))
     (displayln (format "  provider: ~a" (or (config-active-provider-name) "(none)")))
     (displayln (format "  model:    ~a" (current-model-id)))
-    (displayln (format "  check:    ~a~a" (gerbil-setting 'check_command)
+    (displayln (format "  check:    ~a~a" (setting 'check_command)
                        (if (or (file-exists? "Makefile") (file-exists? "makefile")) ""
-                           "  (no Makefile here: built-in paren scan + gxc -S check)")))
+                           "  (no Makefile here: built-in check)")))
     (displayln (format "  skill:    ~a"
                        (let ((s (loaded-skill)))
                          (if s (format "~a (~a chars in the system prompt)" (car s) (cdr s)) "none"))))
@@ -242,10 +239,11 @@ END
 
 Commands:
   /check             run the check now (syntax errors: you fix, then Enter re-runs it)
-  /parens <file>     check delimiter balance of a Gerbil file
-  /outline <file>    list the top-level forms of a Gerbil file
-  /eval <code>       evaluate Gerbil code with gxi in this directory
-  /examples <regex>  search the Gerbil book examples
+  /delims <file>     check delimiter balance of a source file (also /parens)
+  /outline <file>    list the definitions in a source file
+  /eval <code>       run code in the project language in this directory
+  /examples <regex>  search the examples directory (examples_dir setting)
+  /lang [name]       show or switch the project language
   /yes               toggle auto-approve of edits
   /reset             clear the conversation
   /history           dump the message log
@@ -267,9 +265,6 @@ END
 (def (command-arg line cmd)
   (trim (substring line (string-length cmd) (string-length line))))
 
-(def (scheme-files-here)
-  (filter scheme-source-path? (directory-files ".")))
-
 (def (handle-slash-command line)
   (cond
    ((member line '("/quit" "/exit")) 'quit)
@@ -289,13 +284,13 @@ END
     (displayln (format "Auto-approve ~a" (if (auto-approve?) "ON (diffs still shown)" "OFF")))
     'continue)
    ((string=? line "/check")
-    (let-values (((status msg) (check-with-user-fix (scheme-files-here) #f)))
+    (let-values (((status msg) (check-with-user-fix (source-files-here) #f)))
       (displayln (colorize (if (memq status '(passed user-fixed)) GREEN RED) msg))
       ;; Tell the model, so its picture of the files stays current.
       (add-message! (hash (role "user") (content (format "[The user ran the check: ~a]" msg)))))
     'continue)
-   ((string-prefix? "/parens " line)
-    (let ((f (command-arg line "/parens")))
+   ((or (string-prefix? "/delims " line) (string-prefix? "/parens " line))
+    (let ((f (command-arg line (if (string-prefix? "/delims " line) "/delims" "/parens"))))
       (if (file-exists? f)
         (let-values (((ok? text) (paren-check-file f)))
           (displayln (colorize (if ok? GREEN YELLOW) text)))
@@ -305,7 +300,7 @@ END
     (displayln (outline-file (command-arg line "/outline")))
     'continue)
    ((string-prefix? "/eval " line)
-    (displayln (gxi-eval (command-arg line "/eval")))
+    (displayln (run-eval (command-arg line "/eval")))
     'continue)
    ((string-prefix? "/examples " line)
     (displayln (search-examples (command-arg line "/examples")))
@@ -325,6 +320,19 @@ END
                (model-override #f)
                (displayln (format "Provider set to '~a' (model: ~a)" p (current-model-id))))
         (displayln (format "Unknown provider '~a' -- use one of: ~a" p (string-join (config-provider-names) ", ")))))
+    'continue)
+   ((string=? line "/lang")
+    (displayln (format "Language: ~a (~a). Available: ~a"
+                       (language-name (current-lang)) (language-title (current-lang))
+                       (string-join (language-names) ", ")))
+    'continue)
+   ((string-prefix? "/lang " line)
+    (let ((lang (find-language (command-arg line "/lang"))))
+      (if lang
+        (begin (select-language! lang)
+               (refresh-system-prompt)
+               (displayln (format "Language set to ~a." (language-title lang))))
+        (displayln (format "Unknown language -- use one of: ~a" (string-join (language-names) ", ")))))
     'continue)
    ((string=? line "/skills") (show-skills) 'continue)
    (else (load-skill (substring line 1 (string-length line))) 'continue)))
@@ -356,7 +364,7 @@ END
   (add-message! (hash (role "user") (content user-line)))
   (let-values (((reply new-messages)
                 (llm-chat-with-tools (messages) (tool-schemas) execute-tool-calls
-                                     (gerbil-setting 'max_iterations))))
+                                     (setting 'max_iterations))))
     (messages new-messages)
     (displayln (string-append "\n" (trim reply)))))
 
@@ -390,7 +398,7 @@ END
   (reset-conversation)
   (print-banner)
   (let loop ()
-    (let ((line (prompt-line (colorize (string-append BOLD GREEN) "\ngerbil> "))))
+    (let ((line (prompt-line (colorize (string-append BOLD GREEN) (format "\n~a> " (language-name (current-lang)))))))
       (cond
        ((eof-object? line) (newline))
        ((string=? line "") (loop))
@@ -420,7 +428,9 @@ With a prompt, run it once and exit; with none, start the REPL.
   --provider NAME     provider profile from the harness config
   --model ID          model id for this session
   --cwd DIR           work in DIR
-  --no-skill          do not put the gerbil-expert skill in the system prompt
+  --lang NAME         project language: gerbil, python, haskell, typescript,
+                      javascript, generic (default: detected from the files)
+  --no-skill          do not put the language's skill in the system prompt
   --debug             log requests and responses
   -q, --quiet         no banner, less tool chatter
   --plain, --no-color no ANSI colors
@@ -447,12 +457,13 @@ END
             (car rest))
           (cond
            ((member a '("-h" "--help")) (displayln USAGE) (exit EXIT-OK))
-           ((member a '("-v" "--version")) (displayln (format "gerbil-coding-harness ~a" VERSION)) (exit EXIT-OK))
+           ((member a '("-v" "--version")) (displayln (format "coding-harness ~a" VERSION)) (exit EXIT-OK))
            ((member a '("-p" "--prompt"))
             (hash-put! opts 'prompts (append (hash-ref opts 'prompts) [(value!)])) (loop (cdr rest)))
            ((string=? a "--provider") (hash-put! opts 'provider (value!)) (loop (cdr rest)))
            ((string=? a "--model") (hash-put! opts 'model (value!)) (loop (cdr rest)))
            ((string=? a "--cwd") (hash-put! opts 'cwd (value!)) (loop (cdr rest)))
+           ((string=? a "--lang") (hash-put! opts 'lang (value!)) (loop (cdr rest)))
            ((string=? a "--stdin") (hash-put! opts 'stdin #t) (loop rest))
            ((member a '("-y" "--yes")) (hash-put! opts 'yes #t) (loop rest))
            ((string=? a "--dry-run") (hash-put! opts 'dry-run #t) (loop rest))
@@ -475,6 +486,13 @@ END
     (when (null? (config-provider-names))
       (die (format "no providers configured. Add a \"providers\" section to ~a or ~a (see README.md)."
                    (global-config-path) (local-config-path))))
+    ;; Language: --lang, then "language" in the config, then detection.
+    (let* ((name (or (hash-get opts 'lang) (json-ref (harness-config) 'language)))
+           (lang (if name
+                   (or (find-language name)
+                       (die (format "unknown language '~a' -- available: ~a" name (string-join (language-names) ", "))))
+                   (detect-language))))
+      (select-language! lang))
     (let ((cfg (harness-config)))
       (when (json-ref cfg 'quiet) (quiet? #t))
       (when (json-ref cfg 'plain) (color? #f))

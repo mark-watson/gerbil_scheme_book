@@ -22,7 +22,12 @@
         write-file
         read-file
         temp-file-name
-        prompt-line)
+        temp-directory
+        prompt-line
+        string-replace-all
+        append-map
+        drop-last
+        find-executable)
 
 ;; ---------------------------------------------------------------------------
 ;; Subprocesses
@@ -92,6 +97,14 @@
                    (format "\n... (truncated, ~a total chars)" (string-length s)))
     s))
 
+;; Replace every occurrence of `old` in s.
+(def (string-replace-all s old new)
+  (let ((i (string-contains s old)))
+    (if i
+      (string-append (substring s 0 i) new
+                     (string-replace-all (substring s (+ i (string-length old)) (string-length s)) old new))
+      s)))
+
 ;; Read one trimmed line from the user after printing `prompt`; #!eof at EOF.
 (def (prompt-line prompt)
   (display prompt)
@@ -127,3 +140,28 @@
 
 (def (temp-file-name tag)
   (make-temporary-file-name tag))
+
+;; A fresh empty directory; the caller removes it (rm -rf) when done.
+(def (temp-directory tag)
+  (let ((dir (temp-file-name tag)))
+    (create-directory* dir)
+    dir))
+
+;; ---------------------------------------------------------------------------
+;; Lists
+
+(def (append-map f lst) (apply append (map f lst)))
+
+(def (drop-last lst) (if (null? (cdr lst)) [] (cons (car lst) (drop-last (cdr lst)))))
+
+;; ---------------------------------------------------------------------------
+;; Programs
+
+;; The project's own copy (node_modules/.bin/NAME) first, then $PATH; #f
+;; when neither has it.
+(def (find-executable name)
+  (let ((local (path-expand (string-append "node_modules/.bin/" name))))
+    (if (file-exists? local)
+      local
+      (let-values (((out code) (run-command ["/bin/sh" "-c" (string-append "command -v " name)])))
+        (and (= code 0) (not (string=? (trim out) "")) (trim out))))))

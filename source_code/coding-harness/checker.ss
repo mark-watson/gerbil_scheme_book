@@ -4,17 +4,21 @@
 ;;; checker.ss -- the `make check` gate that runs after every accepted edit.
 ;;;
 ;;; Ordinary failures (a failing test, a type error) go back to the model.
-;;; Syntax errors -- above all mismatched parens -- do NOT: models are bad at
-;;; counting parens, and a model "fixing" its own paren error tends to move
-;;; the problem around while rewriting the whole file. Instead the harness
-;;; pinpoints the error (line, column, excerpt, likely fix) and asks the user
-;;; to repair it in their editor, then re-runs the check:
+;;; Syntax errors -- above all mismatched delimiters -- do NOT: models are
+;;; bad at counting parens, and a model "fixing" its own paren error tends to
+;;; move the problem around while rewriting the whole file. Instead the
+;;; harness pinpoints the error (line, column, excerpt, likely fix) and asks
+;;; the user to repair it in their editor, then re-runs the check:
 ;;;
 ;;;   [Enter] re-run the check   r revert the edit   m let the model try
 ;;;   a abort, keep the file as it is
 ;;;
-;;; With no Makefile in the project, a built-in check runs instead: the paren
-;;; scanner plus `gxc -S` (macro-expand only, no C compile) on the file.
+;;; With no Makefile in the project, a built-in check runs instead: the
+;;; delimiter scanner plus each language's own parser or compiler on the
+;;; edited files (gxc -S, Python's ast.parse, ghc -fno-code, tsc --noEmit,
+;;; node --check), or a project-wide build (cabal build, tsc -p) when the
+;;; project has one. What counts as a syntax error comes from the language
+;;; profiles in lang.ss.
 
 (import :std/sugar
         :std/format
@@ -23,20 +27,17 @@
         "config"
         "util"
         "parens"
+        "lang"
         "approval")
 
 (export run-check
         check-with-user-fix
         syntax-trouble
         paren-check-file
+        error-locations
         MAX-CHECK-OUTPUT-CHARS)
 
 (def MAX-CHECK-OUTPUT-CHARS 2500)
-
-;; Gambit/Gerbil reader messages. gxc prints these with no line number.
-(def READER-ERROR-PATTERNS
-  '("Incomplete form" "Datum or EOF expected" "error reading module"
-    "Datum expected" "Invalid token" "Unbalanced"))
 
 ;; ---------------------------------------------------------------------------
 ;; Running the check
@@ -44,7 +45,7 @@
 (def (has-makefile?)
   (or (file-exists? "Makefile") (file-exists? "makefile") (file-exists? "GNUmakefile")))
 
-(def (check-args) (split-words (gerbil-setting 'check_command)))
+(def (check-args) (split-words (setting 'check_command)))
 
 ;; run-check : (listof path) -> (values output exit-code label)
 (def (run-check paths)
@@ -56,84 +57,140 @@
           (builtin-check paths)
           (values out code (format "`~a`" (string-join args " "))))))))
 
+;; Scan every edited source file; then run each language's project build
+;; once, or its per-file check on the files that scanned clean.
 (def (builtin-check paths)
-  (let ((label "built-in check (paren scan + gxc -S; no Makefile/check target)")
-        (sources (filter (lambda (p) (and (scheme-source-path? p) (file-exists? p))) paths))
-        (outdir (temp-file-name "gxh-check")))
-    (let loop ((ps sources) (acc []) (code 0))
-      (if (null? ps)
-        (begin
-          (run-command ["rm" "-rf" outdir])
-          (values (string-join (reverse acc) "\n") code label))
-        (let* ((p (car ps))
-               (text (read-file p))
-               (report (scan-parens text)))
-          (if (not (parens-ok? report))
-            (loop (cdr ps) (cons (format-paren-report p text report) acc) 1)
-            (let-values (((out c) (run-command ["gxc" "-S" "-d" outdir p])))
-              (loop (cdr ps)
-                    (cons (if (= c 0) (format "~a: gxc -S ok" p) out) acc)
-                    (if (= c 0) code c)))))))))
+  (let ((sources (filter (lambda (p) (and (source-path? p) (file-exists? p))) paths))
+        (outdir (temp-directory "harness-check"))
+        (acc [])
+        (code 0)
+        (tools []))
+    (def (note! text c tool)
+      (set! acc (cons text acc))
+      (unless (= c 0) (set! code c))
+      (when (and tool (not (member tool tools))) (set! tools (cons tool tools))))
+    (def (run! args ok-text)
+      (let-values (((out c) (run-command args)))
+        (note! (if (= c 0) ok-text (trim out)) c (path-strip-directory (car args)))))
+    (let* ((clean (filter (lambda (p)
+                            (let-values (((ok? text) (paren-check-file p)))
+                              (unless ok? (note! text 1 #f))
+                              ok?))
+                          sources))
+           (langs (unique-langs (cons (current-lang) (filter-map language-for-path clean)))))
+      (for-each
+       (lambda (lang)
+         (let ((mine (filter (lambda (p) (eq? (language-for-path p) lang)) clean))
+               (project ((language-project-check lang))))
+           (if (and project (or (pair? mine) (eq? lang (current-lang))))
+             (run! project (format "~a: ok" (string-join project " ")))
+             (for-each (lambda (p)
+                         (let ((args ((language-file-check lang) p outdir)))
+                           (if args
+                             (run! args (format "~a: ~a ok" p (path-strip-directory (car args))))
+                             (note! (format "~a: delimiters balanced (no ~a parser available for a deeper check)"
+                                            p (language-title lang))
+                                    0 #f))))
+                       mine))))
+       langs))
+    (run-command ["rm" "-rf" outdir])
+    (values (string-join (reverse acc) "\n")
+            code
+            (format "built-in check (delimiter scan~a; no Makefile/check target)"
+                    (if (null? tools) "" (string-append " + " (string-join (reverse tools) ", ")))))))
+
+(def (unique-langs langs)
+  (let loop ((l langs) (acc []))
+    (cond ((null? l) (reverse acc))
+          ((memq (car l) acc) (loop (cdr l) acc))
+          (else (loop (cdr l) (cons (car l) acc))))))
 
 ;; ---------------------------------------------------------------------------
 ;; Finding the syntax error
 
+;; (values ok? report-text); a file type with no scanner rules counts as ok.
 (def (paren-check-file path)
-  (let* ((text (read-file path))
-         (report (scan-parens text)))
-    (values (parens-ok? report) (format-paren-report path text report))))
+  (let ((lexicon (lexicon-for-path path)))
+    (if (not lexicon)
+      (values #t (format "~a: not scanned (no delimiter rules for this file type)" path))
+      (let* ((text (read-file path))
+             (report (scan-delimiters text lexicon)))
+        (values (parens-ok? report) (format-paren-report path text report))))))
 
-;; Source files the check output mentions, e.g. ... form: "/abs/foo.ss"
-(def (mentioned-sources output)
-  (let loop ((start 0) (acc []))
-    (let ((m (pregexp-match-positions "\"([^\"\n]+\\.(?:ss|scm|sld))\"" output start)))
-      (if m
-        (let ((path (substring output (car (cadr m)) (cdr (cadr m)))))
-          (loop (cdr (car m)) (if (member path acc) acc (cons path acc))))
-        (reverse acc)))))
+;; Positions in compiler output, as (path line col), for files inside the
+;; project (a traceback through the standard library is not the user's to
+;; fix). Formats: Gerbil "foo.ss"@12.3, Python File "foo.py", line 12,
+;; GHC/node/most compilers foo.hs:12:3 or foo.js:12, tsc foo.ts(12,3).
+(def (location-regexes)
+  (let ((exts (string-join (map (lambda (e) (substring e 1 (string-length e))) (source-extensions-all)) "|")))
+    [["\"([^\"\n]+)\"@([0-9]+)\\.([0-9]+)" 1 2 3]
+     ["File \"([^\"\n]+)\", line ([0-9]+)" 1 2 #f]
+     [(format "([^\\s\"'():]+\\.(?:~a))\\(([0-9]+),([0-9]+)\\)" exts) 1 2 3]
+     [(format "([^\\s\"'():]+\\.(?:~a)):([0-9]+)(?::([0-9]+))?" exts) 1 2 3]]))
 
-;; Expander errors carry positions: "foo.ss"@12.3-12.9
-(def (expander-locations output)
-  (let loop ((start 0) (acc []))
-    (let ((m (pregexp-match-positions "\"([^\"\n]+)\"@([0-9]+)\\.([0-9]+)" output start)))
-      (if m
-        (let ((loc (list (substring output (car (cadr m)) (cdr (cadr m)))
-                         (string->number (substring output (car (caddr m)) (cdr (caddr m))))
-                         (string->number (substring output (car (cadddr m)) (cdr (cadddr m)))))))
-          (loop (cdr (car m)) (if (member loc acc) acc (cons loc acc))))
-        (reverse acc)))))
+(def (inside-project? path)
+  (string-prefix? (path-expand (current-directory)) (path-expand path)))
+
+(def (error-locations output)
+  (let ((found []))
+    (for-each
+     (lambda (spec)
+       (let loop ((start 0))
+         (let ((m (pregexp-match-positions (car spec) output start)))
+           (when m
+             (let* ((group (lambda (k)
+                             (let ((pos (and k (list-ref m k))))
+                               (and pos (substring output (car pos) (cdr pos))))))
+                    (path (group (cadr spec)))
+                    (line (string->number (group (caddr spec))))
+                    (col (let ((c (group (cadddr spec)))) (or (and c (string->number c)) 1)))
+                    (loc [path line col]))
+               (when (and (file-exists? path) (inside-project? path) (not (member loc found)))
+                 (set! found (cons loc found))))
+             (loop (cdr (car m)))))))
+     (location-regexes))
+    (reverse found)))
+
+(def (format-locations locs)
+  (string-join
+   (map (lambda (l)
+          (format "~a, line ~a, col ~a:\n~a" (car l) (cadr l) (caddr l)
+                  (source-excerpt (read-file (car l)) (cadr l) (caddr l))))
+        locs)
+   "\n"))
+
+(def (matches-any? patterns output)
+  (ormap (lambda (pat) (pregexp-match pat output)) patterns))
 
 ;; syntax-trouble : output (listof path) -> #f | (kind . diagnostics)
 ;; kind is 'reader (unbalanced delimiters / unreadable file) or 'syntax
-;; (the file reads but the Gerbil expander rejects a form).
+;; (the file reads but the parser or expander rejects it).
 (def (syntax-trouble output edited-paths)
-  (let* ((candidates (filter (lambda (p) (and (scheme-source-path? p) (file-exists? p)))
-                             (append edited-paths (mentioned-sources output))))
+  (let* ((locs (error-locations output))
+         (candidates (filter (lambda (p) (and (source-path? p) (file-exists? p)))
+                             (append edited-paths (map car locs))))
          (paren-reports
           (filter (lambda (x) x)
                   (map (lambda (p)
                          (let-values (((ok? text) (paren-check-file p)))
                            (and (not ok?) text)))
-                       (unique candidates)))))
+                       (unique candidates))))
+         (langs (unique-langs (cons (current-lang) (filter-map language-for-path candidates))))
+         (reader-lang (find (lambda (l) (matches-any? (language-reader-patterns l) output)) langs))
+         (syntax-lang (find (lambda (l) (matches-any? (language-syntax-patterns l) output)) langs)))
     (cond
      ((pair? paren-reports)
       (cons 'reader (string-join paren-reports "\n")))
-     ((ormap (lambda (pat) (string-contains output pat)) READER-ERROR-PATTERNS)
+     (reader-lang
       (cons 'reader
-            (string-append
-             "The Gerbil reader could not read a file, but every delimiter balances. "
-             "Look for a stray '#', a bad character literal (#\\x...), or an unterminated #| comment.")))
-     ((string-contains output "Syntax Error")
+            (if (null? locs)
+              (language-reader-advice reader-lang)
+              (string-append (language-reader-advice reader-lang) "\n" (format-locations locs)))))
+     (syntax-lang
       (cons 'syntax
-            (let ((locs (filter (lambda (l) (file-exists? (car l))) (expander-locations output))))
-              (if (null? locs)
-                "Gerbil expander reported a Syntax Error (see the output above)."
-                (string-join
-                 (map (lambda (l)
-                        (format "~a, line ~a, col ~a:\n~a" (car l) (cadr l) (caddr l)
-                                (source-excerpt (read-file (car l)) (cadr l) (caddr l))))
-                      locs)
-                 "\n")))))
+            (if (null? locs)
+              (format "~a reported a syntax error (see the output above)." (language-title syntax-lang))
+              (format-locations locs))))
      (else #f))))
 
 ;; Drop paths naming a file already seen ("m.ss" and "/abs/dir/m.ss").
@@ -143,9 +200,13 @@
           ((member (path-expand (car l)) seen) (loop (cdr l) seen acc))
           (else (loop (cdr l) (cons (path-expand (car l)) seen) (cons (car l) acc))))))
 
+;; ask_user_on: "syntax" (every syntax error), "reader" (only unbalanced or
+;; unreadable files), "never" (everything goes to the model).
 (def (user-should-fix? kind)
-  (or (eq? kind 'reader)
-      (string=? (gerbil-setting 'ask_user_on) "syntax")))
+  (let ((policy (setting 'ask_user_on)))
+    (cond ((equal? policy "never") #f)
+          ((equal? policy "syntax") #t)
+          (else (eq? kind 'reader)))))
 
 ;; ---------------------------------------------------------------------------
 ;; The gate
@@ -186,7 +247,7 @@
                                  (string-join paths ", ") (cdr trouble))))
                 ((model)
                  (values 'handed-to-model
-                         (format "~a FAILED with a SYNTAX ERROR (exit ~a). The user asks you to fix it. Re-read the file, then propose a corrected version; count delimiters carefully and call check_parens on your result.\n\nDiagnostics:\n~a\n\nCheck output:\n~a"
+                         (format "~a FAILED with a SYNTAX ERROR (exit ~a). The user asks you to fix it. Re-read the file, then propose a corrected version; count delimiters carefully and call check_delimiters on your result.\n\nDiagnostics:\n~a\n\nCheck output:\n~a"
                                  label code (cdr trouble) shown)))
                 (else
                  (values 'aborted
@@ -201,7 +262,7 @@
   (displayln output)
   (displayln (colorize YELLOW diagnostics))
   (displayln "")
-  (displayln (colorize BOLD "Please fix this syntax error in your editor (the harness does not let the model guess at paren fixes)."))
+  (displayln (colorize BOLD "Please fix this syntax error in your editor (the harness does not let the model guess at delimiter fixes)."))
   (displayln "  [Enter]  I fixed it: re-run the check")
   (when revert
     (displayln "  r        revert this edit"))

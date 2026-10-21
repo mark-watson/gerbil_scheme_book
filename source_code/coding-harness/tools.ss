@@ -3,13 +3,17 @@
 ;;;
 ;;; tools.ss -- the tools the model can call.
 ;;;
-;;; General:  read_file  list_dir  grep  run_shell  propose_edit
-;;; Gerbil:   check_parens  outline_file  find_definition  search_examples
-;;;           gxi_eval
+;;; Files:     read_file  list_dir  grep  propose_edit
+;;; Code:      outline_file  find_definition  check_delimiters
+;;; Running:   run_shell  eval_code
+;;; Reference: search_examples (only when an examples_dir is configured)
 ;;;
-;;; propose_edit is the only tool that writes. It pre-scans proposed Gerbil
-;;; source for unbalanced delimiters, shows a colored diff, asks y/n/s, and
-;;; on approval writes the file and runs the `make check` gate (checker.ss),
+;;; The language profile (lang.ss) decides how outline_file, find_definition
+;;; and eval_code work and which commands run_shell accepts.
+;;;
+;;; propose_edit is the only tool that writes. It pre-scans proposed source
+;;; for unbalanced delimiters, shows a colored diff, asks y/n/s, and on
+;;; approval writes the file and runs the `make check` gate (checker.ss),
 ;;; which hands syntax errors to the user rather than the model.
 
 (import :std/sugar
@@ -20,43 +24,50 @@
         "config"
         "util"
         "parens"
+        "lang"
         "approval"
         "checker")
 
 (export tool-schemas
         execute-tool-calls
-        gxi-eval
+        enabled-tools
+        run-eval
         outline-file
-        search-examples
-        ENABLED-TOOLS)
+        search-examples)
 
-(def SHELL-WHITELIST '("make" "ls" "pwd" "cat" "head" "tail" "wc" "diff" "gxc" "gxpkg" "gerbil"))
 (def MAX-TOOL-OUTPUT 12000)
 
 ;; ---------------------------------------------------------------------------
 ;; Registry
 
-;; name -> (description params handler); params: list of (name type description)
+;; name -> (description params handler available?); params: list of
+;; (name type description). A description may be a thunk, so it can name
+;; the current language; available? is a thunk that hides the tool.
 (def registry (make-hash-table))
-(def ENABLED-TOOLS [])
+(def TOOL-ORDER [])
 
-(def (define-tool name params description handler)
-  (hash-put! registry name (list description params handler))
-  (set! ENABLED-TOOLS (append ENABLED-TOOLS [name])))
+(def (define-tool name params description handler (available? (lambda () #t)))
+  (hash-put! registry name (list description params handler available?))
+  (set! TOOL-ORDER (append TOOL-ORDER [name])))
+
+(def (enabled-tools)
+  (filter (lambda (name) ((cadddr (hash-ref registry name)))) TOOL-ORDER))
+
+(def (text-of x) (if (procedure? x) (x) x))
 
 (def (tool-schemas)
   (map (lambda (name)
          (let* ((entry (hash-ref registry name))
                 (props (make-hash-table)))
-           (for-each (lambda (p) (hash-put! props (car p) (hash (type (cadr p)) (description (caddr p)))))
+           (for-each (lambda (p) (hash-put! props (car p) (hash (type (cadr p)) (description (text-of (caddr p))))))
                      (cadr entry))
            (hash (type "function")
                  (function (hash (name name)
-                                 (description (car entry))
+                                 (description (text-of (car entry)))
                                  (parameters (hash (type "object")
                                                    (properties props)
                                                    (required (map car (cadr entry))))))))))
-       ENABLED-TOOLS))
+       (enabled-tools)))
 
 ;; ---------------------------------------------------------------------------
 ;; Dispatch
@@ -66,9 +77,9 @@
     (if (> (string-length flat) 120) (string-append (substring flat 0 117) "...") flat)))
 
 (def (call-tool name args)
-  (let ((entry (hash-get registry name)))
+  (let ((entry (and (member name (enabled-tools)) (hash-get registry name))))
     (if (not entry)
-      (format "Error: unknown tool '~a'. Available tools: ~a" name (string-join ENABLED-TOOLS ", "))
+      (format "Error: unknown tool '~a'. Available tools: ~a" name (string-join (enabled-tools) ", "))
       (let* ((params (cadr entry))
              (missing (filter (lambda (p) (not (string? (json-ref args (car p))))) params)))
         (if (pair? missing)
@@ -108,7 +119,13 @@
 ;; ---------------------------------------------------------------------------
 ;; File tools
 
-;; Editor droppings and dotfiles (.git, .env, .gerbil build output) stay out.
+;; Build output and dependency trees that grep should never wander into.
+(def SKIPPED-DIRS '(".gerbil" ".git" "node_modules" "dist-newstyle" ".stack-work" "__pycache__"
+                    ".venv" "venv" ".mypy_cache" ".pytest_cache" ".ruff_cache"))
+
+(def (exclude-dir-flags) (map (lambda (d) (string-append "--exclude-dir=" d)) SKIPPED-DIRS))
+
+;; Editor droppings and dotfiles (.git, .env, build output) stay out.
 (def (hidden-file? name)
   (or (string-suffix? "~" name)
       (and (string-prefix? "#" name) (string-suffix? "#" name))
@@ -127,23 +144,36 @@
     (format "Error: ~a is not a directory" path)
     (string-join
      (map (lambda (e) (if (file-directory? (path-expand e path)) (string-append e "/") e))
-          (sort (filter (lambda (e) (not (hidden-file? e))) (directory-files path)) string<?))
+          (sort (filter (lambda (e) (not (or (hidden-file? e) (member e SKIPPED-DIRS))))
+                        (directory-files path))
+                string<?))
      "\n")))
 
 (def (tool-grep pattern path)
-  (let-values (((out code) (run-command ["grep" "-rnE" "--exclude-dir=.gerbil" "--exclude-dir=.git"
-                                         "-e" pattern path])))
+  (let-values (((out code) (run-command (append ["grep" "-rnE"] (exclude-dir-flags) ["-e" pattern path]))))
     (cond
      ((= code 1) "(no matches)")
      (else (truncate-string out MAX-TOOL-OUTPUT)))))
+
+;; A command is allowed when its words start with one of the whitelisted
+;; prefixes: "npm test" allows `npm test -- --watch=false` but not `npm install`.
+(def (allowed-command? tokens)
+  (find (lambda (entry)
+          (let ((words (split-words entry)))
+            (and (<= (length words) (length tokens))
+                 (equal? words (take-first tokens (length words))))))
+        (shell-commands)))
+
+(def (take-first lst n) (if (or (= n 0) (null? lst)) [] (cons (car lst) (take-first (cdr lst) (- n 1)))))
 
 (def (tool-run-shell command)
   (let ((tokens (split-words command)))
     (cond
      ((null? tokens) "empty command")
-     ((not (member (car tokens) SHELL-WHITELIST))
-      (format "Command '~a' is not whitelisted. Allowed: ~a. (Use gxi_eval to evaluate Gerbil code.)"
-              (car tokens) (string-join SHELL-WHITELIST ", ")))
+     ((not (allowed-command? tokens))
+      (format "Command '~a' is not whitelisted. Allowed (as command prefixes): ~a.~a"
+              command (string-join (shell-commands) ", ")
+              (if (language-evaluator (current-lang)) " (Use eval_code to run code.)" "")))
      ((find (lambda (a) (and (not (string-prefix? "-" a)) (hidden-file? (path-strip-directory a))))
             (cdr tokens))
       => (lambda (bad) (format "refusing to run a command that references a hidden/internal file: ~a" bad)))
@@ -152,17 +182,20 @@
         (format "~a(exit ~a)" (truncate-string out MAX-TOOL-OUTPUT) code))))))
 
 ;; ---------------------------------------------------------------------------
-;; Gerbil tools
+;; Code tools
 
-(def (tool-check-parens path)
+(def (tool-check-delimiters path)
   (if (not (file-exists? path))
     (format "Error: ~a does not exist" path)
     (let-values (((ok? text) (paren-check-file path)))
       text)))
 
+;; Lisp: the top-level forms from the scanner. Other languages: the lines
+;; matching the language's outline pattern (definitions, classes, ...).
 (def (outline-file path)
-  (if (not (file-exists? path))
-    (format "Error: ~a does not exist" path)
+  (cond
+   ((not (file-exists? path)) (format "Error: ~a does not exist" path))
+   ((eq? (lexicon-for-path path) 'lisp)
     (let* ((text (read-file path))
            (report (scan-parens text))
            (forms (paren-report-forms report)))
@@ -176,83 +209,88 @@
         "\n")
        (if (parens-ok? report)
          ""
-         (string-append "\n\n" (format-paren-report path text report)))))))
+         (string-append "\n\n" (format-paren-report path text report))))))
+   (else
+    (let* ((lang (or (language-for-path path) (current-lang)))
+           (pattern (language-outline-pattern lang)))
+      (let-values (((out code) (run-command ["grep" "-nE" "-e" pattern path]))
+                   ((ok? report) (paren-check-file path)))
+        (string-append
+         (if (= code 0)
+           (string-join
+            (map (lambda (l)
+                   (let ((colon (string-index l #\:)))
+                     (format "~a  ~a" (string-pad (substring l 0 colon) 5)
+                             (string-trim-right (substring l (+ colon 1) (string-length l))))))
+                 (filter (lambda (l) (not (string=? l ""))) (string-split out #\newline)))
+            "\n")
+           (format "(no ~a definitions found in ~a; use read_file)" (language-title lang) path))
+         (if ok? "" (string-append "\n\n" report))))))))
 
 ;; Characters that are special in a POSIX extended regex but legal in
-;; Scheme identifiers (list->vector!, string->symbol, *foo*, ...).
+;; identifiers in some language (list->vector!, *foo*, $el, x').
 (def (regex-quote s)
   (list->string
    (append-map (lambda (c) (if (memv c (string->list ".[]()*+?{}|^$\\")) [#\\ c] [c]))
                (string->list s))))
 
-(def (append-map f lst) (apply append (map f lst)))
-
-(def DEFINING-FORMS
-  "def|define|def\\*|defvalues|defconst|defalias|definline|defstruct|defclass|defmethod|defrule|defrules|defsyntax|defsyntax-call|define-syntax|defgeneric|deferror-class|define-values|defcall-actor|defmessage")
+(def (include-flags lang)
+  (map (lambda (e) (string-append "--include=*" e)) (language-extensions lang)))
 
 (def (tool-find-definition name)
-  (let* ((pattern (format "\\((~a)[[:space:]]+[(]?~a([[:space:])]|$)" DEFINING-FORMS (regex-quote name))))
-    (let-values (((out code) (run-command ["grep" "-rnE" "--include=*.ss" "--include=*.scm" "--include=*.ssi"
-                                           "--include=*.sld" "--exclude-dir=.gerbil" "--exclude-dir=.git"
-                                           "-e" pattern "."])))
+  (let* ((lang (current-lang))
+         (pattern (string-replace-all (language-def-pattern lang) "~a" (regex-quote name))))
+    (let-values (((out code) (run-command (append ["grep" "-rnE"] (include-flags lang) (exclude-dir-flags)
+                                                  ["-e" pattern "."]))))
       (if (= code 1)
-        (format "No definition of ~a found under ~a (it may come from an imported :std module; try search_examples)"
-                name (current-directory))
+        (format "No definition of ~a found under ~a (it may come from a library; try grep~a)"
+                name (current-directory)
+                (if (examples-dir) " or search_examples" ""))
         (truncate-string out MAX-TOOL-OUTPUT)))))
 
+(def (examples-dir)
+  (let ((d (setting 'examples_dir)))
+    (and (string? d) (file-directory? (path-expand d)) (path-expand d))))
+
 (def (search-examples pattern)
-  (let ((dir (path-expand (gerbil-setting 'examples_dir))))
-    (if (not (file-directory? dir))
-      (format "Examples directory ~a not found (set gerbil.examples_dir in the harness config)" dir)
-      (let-values (((out code) (run-command ["grep" "-rnE" "-m" "4" "--include=*.ss" "--exclude-dir=.gerbil"
-                                             "--exclude-dir=gerbil-coding-harness" "-e" pattern dir])))
+  (let ((dir (examples-dir)))
+    (if (not dir)
+      (format "No examples directory configured for ~a (set languages.~a.examples_dir in the harness config)"
+              (language-title (current-lang)) (language-name (current-lang)))
+      (let-values (((out code) (run-command (append ["grep" "-rnE" "-m" "4"] (include-flags (current-lang))
+                                                    (exclude-dir-flags) ["--exclude-dir=coding-harness"
+                                                                         "-e" pattern dir]))))
         (if (= code 1)
           (format "(no matches for ~s in ~a)" pattern dir)
           (truncate-string out MAX-TOOL-OUTPUT))))))
 
-;; Evaluate Gerbil code in a fresh `gxi` in the working directory, so
-;; (import "foo") loads ./foo.ss. gxi -e takes one form per flag, so the
-;; code is split into top-level forms; if the last form is an expression its
-;; value is printed with `write`.
-(def NON-VALUE-HEADS '("def" "define" "import" "export" "defstruct" "defclass" "defrule" "defrules"
-                       "defsyntax" "defmethod" "defvalues" "displayln" "display" "write" "pretty-print"
-                       "for-each" "begin" "set!" "hash-put!"))
+;; Run a snippet in a fresh process in the working directory, killed after
+;; eval_timeout seconds.
+(def (run-eval code)
+  (let ((lang (current-lang)))
+    (if (and (language-strict? lang)
+             (not (parens-ok? (scan-delimiters code (language-lexicon lang)))))
+      (format "not evaluated: ~a"
+              (format-paren-report "code" code (scan-delimiters code (language-lexicon lang))))
+      (let* ((tmpdir (temp-directory "harness-eval"))
+             (args (eval-command code tmpdir))
+             (secs (setting 'eval_timeout)))
+        (try
+         (if (not args)
+           (format "eval_code is not available for ~a" (language-title lang))
+           (let-values (((out status timed-out?) (run-command/timeout args secs)))
+             (string-append (truncate-string out MAX-TOOL-OUTPUT)
+                            (if timed-out?
+                              (format "\n(killed after ~a s timeout)" secs)
+                              (format "(exit ~a)" status)))))
+         (finally (run-command ["rm" "-rf" tmpdir])))))))
 
-(def (form-head form)
-  (let* ((s (substring form 1 (string-length form)))
-         (end (or (string-index s (lambda (c) (or (char-whitespace? c) (memv c '(#\( #\) #\[ #\]))))) (string-length s))))
-    (substring s 0 end)))
-
-(def (gxi-eval code)
-  (let* ((report (scan-parens code))
-         (forms (top-level-form-strings code)))
-    (cond
-     ((not (parens-ok? report))
-      (format "not evaluated: ~a" (format-paren-report "code" code report)))
-     (else
-      (let* ((forms (if (null? forms) [(trim code)] forms))
-             (last-form (last forms))
-             (printed (if (and (string-prefix? "(" last-form)
-                               (not (member (form-head last-form) NON-VALUE-HEADS)))
-                        (format "(let ((v ~a)) (unless (void? v) (write v) (newline)))" last-form)
-                        last-form))
-             (all (append (drop-last forms) [printed]))
-             (args (cons "gxi" (append-map (lambda (f) ["-e" f]) all)))
-             (secs (gerbil-setting 'eval_timeout)))
-        (let-values (((out code timed-out?) (run-command/timeout args secs)))
-          (string-append (truncate-string out MAX-TOOL-OUTPUT)
-                         (if timed-out?
-                           (format "\n(killed after ~a s timeout)" secs)
-                           (format "(exit ~a)" code)))))))))
-
-(def (drop-last lst) (if (null? (cdr lst)) [] (cons (car lst) (drop-last (cdr lst)))))
-
-(def (tool-gxi-eval code)
-  (displayln (colorize BOLD "\nThe model wants to evaluate this Gerbil code with gxi:"))
+(def (tool-eval-code code)
+  (displayln (colorize BOLD (format "\nThe model wants to run this ~a code:" (language-title (current-lang)))))
   (displayln (colorize CYAN code))
   (if (or (auto-approve?)
           (eq? 'yes (ask-choice "Run it? [y]es / [n]o: " '(("y" . yes) ("yes" . yes) ("n" . no) ("no" . no)) 'no)))
-    (gxi-eval code)
+    (run-eval code)
     "user declined to run this code"))
 
 ;; ---------------------------------------------------------------------------
@@ -269,7 +307,9 @@
      ((and (not exists?) (string=? new ""))
       "refused: cannot create an empty file")
      (else
-      (let* ((report (and (scheme-source-path? path) (scan-parens new)))
+      (let* ((lexicon (lexicon-for-path path))
+             (strict? (let ((l (language-for-path path))) (and l (language-strict? l))))
+             (report (and lexicon (scan-delimiters new lexicon)))
              (balanced? (or (not report) (parens-ok? report)))
              (paren-text (if balanced? "" (format-paren-report path new report))))
         (displayln "")
@@ -280,7 +320,10 @@
         (cond
          ((dry-run?)
           "dry-run: diff shown, file not written")
-         ((and (auto-approve?) (not balanced?))
+         ;; Only Lisp is refused outright: elsewhere the scanner can be fooled
+         ;; (unusual string syntax), and the check after writing catches a
+         ;; real imbalance anyway.
+         ((and (auto-approve?) (not balanced?) strict?)
           (format "refused: auto-approve never writes unbalanced code. Fix the delimiters and propose again.\n~a" paren-text))
          ((auto-approve?)
           (unless (quiet?) (displayln (colorize YELLOW "[auto-approve: applying]")))
@@ -288,7 +331,7 @@
          (else
           (case (ask-choice
                  (format "\nApply this change? [y]es / [n]o / [s]kip and tell the model why~a: "
-                         (if balanced? "" " / [p] send the paren errors back to the model"))
+                         (if balanced? "" " / [p] send the delimiter errors back to the model"))
                  (append '(("y" . yes) ("yes" . yes) ("n" . no) ("no" . no) ("s" . skip) ("skip" . skip))
                          (if balanced? [] '(("p" . parens))))
                  'no-user)
@@ -320,48 +363,59 @@
 
 (define-tool "list_dir"
   '(("path" "string" "Directory path. Use \".\" for the working directory."))
-  "List files and subdirectories (with trailing /). Hidden files and .gerbil build output are excluded."
+  "List files and subdirectories (with trailing /). Hidden files, build output and dependency directories are excluded."
   tool-list-dir)
 
 (define-tool "grep"
   '(("pattern" "string" "Extended regex (grep -E).")
     ("path" "string" "Directory or file to search."))
-  "Recursively grep for PATTERN with line numbers (skips .gerbil and .git)."
+  "Recursively grep for PATTERN with line numbers (skips .git, node_modules, virtualenvs and build output)."
   tool-grep)
 
 (define-tool "find_definition"
-  '(("name" "string" "Identifier to look up, e.g. \"scan-parens\" or \"my-struct\"."))
-  "Find where a Gerbil identifier is defined (def, define, defstruct, defclass, defrule, defsyntax, defmethod, ...) in the project's .ss/.scm/.ssi files."
+  '(("name" "string" "Identifier to look up, e.g. \"parse_row\" or \"ParseError\"."))
+  (lambda ()
+    (format "Find where a ~a identifier (function, class, type, constant, ...) is defined in the project's ~a files."
+            (language-title (current-lang))
+            (let ((exts (language-extensions (current-lang))))
+              (if (null? exts) "source" (string-join exts "/")))))
   tool-find-definition)
 
 (define-tool "outline_file"
-  '(("path" "string" "Gerbil source file."))
-  "List the top-level forms of a Gerbil source file with their start-end line numbers (cheaper than read_file for a big file). Also reports unbalanced delimiters."
+  '(("path" "string" "Source file."))
+  "List the definitions in a source file (top-level forms for Lisp; functions, classes and types for other languages) with line numbers. Cheaper than read_file for a big file. Also reports unbalanced delimiters."
   outline-file)
 
-(define-tool "check_parens"
-  '(("path" "string" "Gerbil source file to check."))
-  "Check that every (), [] and {} in a Gerbil file balances, reading strings, |symbols|, ; and #| |# comments and #\\x characters the way the Gerbil reader does. Reports line/column and the likely fix for each problem."
-  tool-check-parens)
+(define-tool "check_delimiters"
+  '(("path" "string" "Source file to check."))
+  "Check that every (), [] and {} in a source file balances, skipping strings and comments the way the language's reader does. Reports line/column and the likely fix for each problem."
+  tool-check-delimiters)
 
 (define-tool "search_examples"
-  '(("pattern" "string" "Extended regex to look for in the example .ss files, e.g. \"http-post\" or \"defstruct\"."))
-  "Search the Gerbil Scheme book examples (working, idiomatic Gerbil code for JSON, HTTP, LLM APIs, FFI, CLI tools, actors, ...) for usage patterns. Use it to check the exact name and signature of a :std library function before using it."
-  search-examples)
+  '(("pattern" "string" "Extended regex to look for in the example files, e.g. \"http-post\" or \"defstruct\"."))
+  (lambda ()
+    (format "Search a directory of working ~a example code for usage patterns. Use it to check the exact name and signature of a library function before using it."
+            (language-title (current-lang))))
+  search-examples
+  (lambda () (and (examples-dir) #t)))
 
-(define-tool "gxi_eval"
-  '(("code" "string" "One or more Gerbil forms. (import \"foo\") loads ./foo.ss. The last expression's value is printed."))
-  "Evaluate Gerbil code in a fresh gxi process in the working directory and return its output. The user approves each evaluation. Use it to try out a function or check how a :std API behaves."
-  tool-gxi-eval)
+(define-tool "eval_code"
+  `(("code" "string" ,(lambda () (language-eval-help (current-lang)))))
+  (lambda ()
+    (format "Run ~a code in a fresh process in the working directory and return its output. The user approves each run. Use it to try out a function or check how a library API behaves."
+            (language-title (current-lang))))
+  tool-eval-code
+  (lambda () (and (language-evaluator (current-lang)) #t)))
 
 (define-tool "run_shell"
-  `(("command" "string" ,(string-append "A whitelisted command (no shell, no pipes): " (string-join SHELL-WHITELIST ", "))))
-  "Run a whitelisted command and return its combined output and exit code. Use `make check` or `gxc -S file.ss` to verify code."
+  `(("command" "string" ,(lambda () (string-append "A whitelisted command (no shell, no pipes); it must start with one of: "
+                                                  (string-join (shell-commands) ", ")))))
+  "Run a whitelisted command and return its combined output and exit code. Use it to build, test and lint (`make check`, test runners, type checkers)."
   tool-run-shell)
 
 (define-tool "propose_edit"
   '(("path" "string" "Path of the file to edit or create.")
     ("old" "string" "For an existing file: its exact current contents. For a new file: the empty string.")
     ("new" "string" "The complete new contents of the file."))
-  "Propose an edit or a new file. The user sees a colored diff (with a warning if the delimiters do not balance) and approves it; then the file is written and `make check` runs. Syntax errors found by the check are shown to the user to fix by hand."
+  "Propose an edit or a new file. The user sees a colored diff (with a warning if the delimiters do not balance) and approves it; then the file is written and the project check runs. Syntax errors found by the check may be shown to the user to fix by hand."
   tool-propose-edit)

@@ -10,18 +10,24 @@
 ;;;   Local:   ./.local_coding_harness.json   (wins on conflicts)
 ;;;
 ;;; Nested objects merge recursively; anything else is replaced wholesale.
-;;; On top of the shared "providers" section this harness reads an optional
-;;; "gerbil" section:
+;;; On top of the shared "providers" section this harness reads:
 ;;;
-;;;   "gerbil": {
-;;;     "skill":          "gerbil-expert",   ; ~/.agents/skills/<skill>/SKILL.md
-;;;     "autoload_skill": true,              ; put it in the system prompt
-;;;     "examples_dir":   "~/GITHUB/gerbil_scheme_book/source_code",
+;;;   "language": "python",                ; force the project language
+;;;   "harness": {                         ; settings for every language
 ;;;     "check_command":  "make check",
-;;;     "ask_user_on":    "syntax",          ; "syntax" | "reader"
+;;;     "ask_user_on":    "reader",        ; "syntax" | "reader" | "never"
 ;;;     "max_iterations": 30,
 ;;;     "eval_timeout":   20
+;;;   },
+;;;   "languages": {                       ; per-language overrides
+;;;     "python": { "check_command": "pytest -q", "skill": "python-dev" },
+;;;     "gerbil": { "examples_dir": "~/GITHUB/gerbil_scheme_book/source_code" }
 ;;;   }
+;;;
+;;; A setting is looked up in languages.<current language>, then harness,
+;;; then the language profile's defaults (lang.ss), then the harness
+;;; defaults. The older top-level "gerbil" section still works: it counts as
+;;; languages.gerbil.
 
 (import :std/sugar
         :std/format
@@ -41,7 +47,9 @@
         provider-generation
         provider-pricing
         json-ref
-        gerbil-setting
+        setting
+        current-language
+        language-defaults
         global-config-path
         local-config-path
         ;; session flags (parameters, so every module sees one value)
@@ -150,19 +158,37 @@
   (let ((g (json-ref p 'pricing))) (if (hash-table? g) g (make-hash-table))))
 
 ;; ---------------------------------------------------------------------------
-;; The "gerbil" section, with the harness defaults
+;; Settings, layered by language
 
-(def gerbil-defaults
-  (hash (skill "gerbil-expert")
+;; The language profile in use ("python", "gerbil", ...) and its defaults
+;; (a hash); lang.ss sets both when a language is selected.
+(def current-language (make-parameter "generic"))
+(def language-defaults (make-parameter (make-hash-table)))
+
+(def harness-defaults
+  (hash (skill #f)
         (autoload_skill #t)
-        (examples_dir "~/GITHUB/gerbil_scheme_book/source_code")
+        (examples_dir #f)
         (check_command "make check")
-        (ask_user_on "syntax")
+        (ask_user_on "reader")
         (max_iterations 30)
         (eval_timeout 20)))
 
-(def (gerbil-setting key)
-  (let ((section (json-ref (harness-config) 'gerbil)))
-    (if (and (hash-table? section) (hash-key? section key) (not (void? (hash-ref section key))))
-      (hash-ref section key)
-      (hash-get gerbil-defaults key))))
+(def (section-value section key)
+  (and (hash-table? section)
+       (let ((v (hash-ref section key (void))))
+         (and (not (void? v)) (box v)))))
+
+(def (language-section)
+  (let* ((cfg (harness-config))
+         (langs (json-ref cfg 'languages))
+         (own (and (hash-table? langs) (json-ref langs (current-language)))))
+    (if (and (string=? (current-language) "gerbil") (hash-table? (json-ref cfg 'gerbil)))
+      (if (hash-table? own) (deep-merge (json-ref cfg 'gerbil) own) (json-ref cfg 'gerbil))
+      own)))
+
+(def (setting key)
+  (let ((found (or (section-value (language-section) key)
+                   (section-value (json-ref (harness-config) 'harness) key)
+                   (section-value (language-defaults) key))))
+    (if found (unbox found) (hash-get harness-defaults key))))
