@@ -6,7 +6,7 @@
 #   make install    put a `gerbil-harness` launcher in $(PREFIX)/bin
 
 SRCS := config.ss util.ss parens.ss approval.ss llm.ss checker.ss tools.ss harness.ss
-PREFIX ?= /usr/local
+PREFIX ?= ~/bin
 HERE := $(shell pwd)
 RLWRAP := $(shell command -v rlwrap 2>/dev/null)
 
