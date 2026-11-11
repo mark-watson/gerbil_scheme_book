@@ -64,7 +64,7 @@ You will find useful tutorial examples for using Gerbil Scheme in the sub-direct
 
 ### Introduction: Gerbil as a Systems Language
 
-While Gerbil Scheme is another dialect in the Lisp family, it is like Racket Scheme in that it is "opinionated", reflecting the Gerbil developers'  style and philosophy.
+While Gerbil Scheme is another dialect in the Lisp family, it is like Racket Scheme in that it is "opinionated,” reflecting the Gerbil developers'  style and philosophy.
 
 Gerbil is built on Gambit Scheme, a high-performance, retargetable compiler.  Gerbil inherits a legacy of speed and portability while introducing a state-of-the-art module and object system inspired by Racket. The result is a language engineered for creating efficient, concurrent, and robust long-running applications, positioning it as a powerful tool for tasks ranging from web services to distributed systems.
 
@@ -115,26 +115,3 @@ For handling the responses from web services we will use the Data Interchange La
 
 Virtually all modern web APIs use JSON as their data interchange format. Gerbil provides a canonical, flexible, and efficient JSON processing library in **:std/text/json**. This module is the essential counterpart to **:std/net/request**, handling the serialization of Scheme data into JSON strings for request bodies and the parsing of JSON responses back into Scheme objects.
 
-## Suppressing or Fixing Compilation Warning Messages on macOS
-
-On my macBook I see lots of warnings like:
-
-```
-clang: warning: overriding deployment version from '16.0' to '26.0' [-Woverriding-deployment-version]
-```
-
-This warning typically appears on Apple platforms (macOS, iOS) when the linker is forced to choose a newer deployment target than what some of the input object files were compiled for.
-
-As I write this in September 2025 using macOS Tahoe (version 26.0 Beta), I fix the problem by directly setting:
-
-```
-export MACOSX_DEPLOYMENT_TARGET=15.0
-```
-
-A lower target like 12.0 also works on my computer.
-
-A "solution" that I don't like but works (like a sledgehammer) is to suppress all warnings (don't use this):
-
-```
-export CFLAGS="-Wno-overriding-deployment-version"
-```
