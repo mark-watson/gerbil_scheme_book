@@ -42,9 +42,15 @@
                     (car triples)
                     "parse-rdf-file->triples structure"))
 
-    ;; 5. Error handling: nonexistent file returns empty string
+    ;; 5. Error handling: nonexistent file returns #f and parse-rdf-file raises
     (let ((bad (raptor-parse-file->ntriples "no-such-file.ttl" "turtle")))
-      (assert-equal "" bad "nonexistent file returns empty string"))
+      (assert-equal #f bad "nonexistent file returns #f"))
+
+    (let ((raised? #f))
+      (with-catch
+        (lambda (e) (set! raised? #t))
+        (lambda () (parse-rdf-file "no-such-file.ttl" "turtle")))
+      (assert-equal #t raised? "parse-rdf-file raises on error"))
 
     ;; Clean up
     (when (file-exists? ttl-file)

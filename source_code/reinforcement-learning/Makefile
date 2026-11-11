@@ -1,3 +1,8 @@
+GERBIL_PATH := $(CURDIR)/.gerbil
+export GERBIL_PATH
+
+test: run-mdp run-qlearning
+
 run-qlearning:
 	gxi frozen_lake_qlearning.ss
 

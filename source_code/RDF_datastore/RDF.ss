@@ -2,19 +2,15 @@
 ;;;
 ;;; Supports:
 ;;;   make-store        – create an empty triple store
-;;;   add-triple        – add an (s p o) triple
-;;;   remove-triple     – remove a matching (s p o) triple
+;;;   add-triple        – add an (s p o) triple (set-like, no duplicates)
+;;;   remove-triple     – remove the first matching (s p o) triple
 ;;;   store-triples     – retrieve all triples from a store
 ;;;   sparql-select     – run a SELECT query (variables + WHERE patterns)
 ;;;   print-all-triples – display all triples for debugging
-;;;
-;;; SPARQL subset handled:
-;;;   SELECT ?var1 ?var2 ... WHERE { s p o . s p o . }
-;;;   SELECT * WHERE { ... }
-;;;   Variables begin with '?'
 
 (export make-store add-triple remove-triple store-triples
-        sparql-select print-all-triples)
+        sparql-select print-all-triples main)
+(import :std/srfi/13 :gerbil/gambit)
 
 ;;;; ──────────────────────────────────────────────────────────────────
 ;;;;  1.  Data model
@@ -28,22 +24,27 @@
 (define (store-triples st) (cdr st))
 
 (define (add-triple st s p o)
-  "Add the triple (s p o) to store ST; returns ST for chaining."
-  (set-cdr! st (cons (list s p o) (cdr st)))
-  st)
+  ;; Add the triple (s p o) to store ST if not already present; returns ST for chaining.
+  (let ((triple (list s p o)))
+    (unless (member triple (cdr st))
+      (set-cdr! st (cons triple (cdr st))))
+    st))
 
 (define (remove-triple st s p o)
-  "Remove the first triple matching (s p o) from store ST."
-  (set-cdr! st
-            (filter (lambda (t)
-                      (not (and (equal? (car t)   s)
-                                (equal? (cadr t)  p)
-                                (equal? (caddr t) o))))
-                    (cdr st)))
-  st)
+  ;; Remove the first triple matching (s p o) from store ST.
+  (let loop ((prev st) (curr (cdr st)))
+    (cond
+     ((null? curr) st)
+     ((and (equal? (caar curr) s)
+           (equal? (cadar curr) p)
+           (equal? (caddar curr) o))
+      (set-cdr! prev (cdr curr))
+      st)
+     (else
+      (loop curr (cdr curr))))))
 
 (define (print-all-triples st)
-  "Display every triple in the store."
+  ;; Display every triple in the store.
   (display "All triples:\n")
   (for-each (lambda (t)
               (display "  ")
@@ -57,14 +58,8 @@
 ;;;;  2.  Tokenizer
 ;;;; ──────────────────────────────────────────────────────────────────
 
-(define (char-whitespace? ch)
-  (or (char=? ch #\space)
-      (char=? ch #\tab)
-      (char=? ch #\newline)
-      (char=? ch #\return)))
-
 (define (tokenize str)
-  "Split STR into a list of tokens; {}, .,; each become their own token."
+  ;; Split STR into SPARQL tokens, preserving <IRI> and "literal" strings atomically.
   (let ((tokens '())
         (buf    '()))
 
@@ -80,30 +75,52 @@
             (reverse tokens))
           (let ((ch (car chars)))
             (cond
+             ((char=? ch #\<)
+              (emit!)
+              (let read-iri ((cs (cdr chars)) (acc (list #\<)))
+                (cond
+                 ((null? cs)
+                  (set! tokens (cons (list->string (reverse acc)) tokens))
+                  (loop '()))
+                 ((char=? (car cs) #\>)
+                  (set! tokens (cons (list->string (reverse (cons #\> acc))) tokens))
+                  (loop (cdr cs)))
+                 (else
+                  (read-iri (cdr cs) (cons (car cs) acc))))))
+             ((char=? ch #\")
+              (emit!)
+              (let read-str ((cs (cdr chars)) (acc (list #\")))
+                (cond
+                 ((null? cs)
+                  (set! tokens (cons (list->string (reverse acc)) tokens))
+                  (loop '()))
+                 ((and (char=? (car cs) #\\) (pair? (cdr cs)))
+                  (read-str (cddr cs) (cons (cadr cs) (cons #\\ acc))))
+                 ((char=? (car cs) #\")
+                  (set! tokens (cons (list->string (reverse (cons #\" acc))) tokens))
+                  (loop (cdr cs)))
+                 (else
+                  (read-str (cdr cs) (cons (car cs) acc))))))
              ((member ch '(#\( #\) #\{ #\} #\. #\, #\;))
               (emit!)
-              (set! tokens (cons (string ch) tokens)))
+              (set! tokens (cons (string ch) tokens))
+              (loop (cdr chars)))
              ((char-whitespace? ch)
-              (emit!))
+              (emit!)
+              (loop (cdr chars)))
              (else
-              (set! buf (cons ch buf))))
-            (loop (cdr chars)))))))
+              (set! buf (cons ch buf))
+              (loop (cdr chars)))))))))
 
 ;;;; ──────────────────────────────────────────────────────────────────
 ;;;;  3.  SPARQL parser
 ;;;; ──────────────────────────────────────────────────────────────────
 
 (define (var? tok)
-  "True if TOK is a SPARQL variable (starts with '?')."
+  ;; True if TOK is a SPARQL variable (starts with '?').
   (and (string? tok)
        (> (string-length tok) 0)
        (char=? (string-ref tok 0) #\?)))
-
-(define (string-ci=? a b)
-  (string=? (string-downcase a) (string-downcase b)))
-
-(define (string-downcase s)
-  (list->string (map char-downcase (string->list s))))
 
 ;; Drop leading tokens until test passes, return remaining list.
 (define (drop-until pred lst)
@@ -113,15 +130,14 @@
    (else                (drop-until pred (cdr lst)))))
 
 (define (parse-sparql query)
-  "Parse a minimal SELECT … WHERE { … } query.
-   Returns two values: (vars patterns).
-   vars     – list of variable name strings (or '(\"*\") for SELECT *)
-   patterns – list of (s p o) patterns"
-
-  (let* ((toks    (map string-downcase (tokenize query)))
+  ;; Parse a minimal SELECT … WHERE { … } query.
+  ;; Returns two values: (vars patterns).
+  ;; vars     – list of variable name strings (or '("*") for SELECT *)
+  ;; patterns – list of (s p o) patterns
+  (let* ((toks (tokenize query))
          ;; advance to SELECT keyword
          (after-select
-          (let ((rest (drop-until (lambda (t) (string=? t "select")) toks)))
+          (let ((rest (drop-until (lambda (t) (string-ci=? t "select")) toks)))
             (if (null? rest) '() (cdr rest)))))
 
     ;; collect SELECT variables (or * wildcard)
@@ -166,12 +182,12 @@
 ;; An environment (binding set) is an association list: ((var . val) ...)
 
 (define (env-lookup var env)
-  "Return the value bound to VAR in ENV, or #f."
+  ;; Return the value bound to VAR in ENV, or #f.
   (let ((pair (assoc var env)))
     (and pair (cdr pair))))
 
 (define (env-extend var val env)
-  "Return a new env with VAR=VAL added, or #f on conflict."
+  ;; Return a new env with VAR=VAL added, or #f on conflict.
   (let ((existing (assoc var env)))
     (cond
      (existing
@@ -180,8 +196,8 @@
       (cons (cons var val) env)))))
 
 (define (match-pattern pattern triple env)
-  "Try to unify one PATTERN with one TRIPLE given ENV.
-   Returns extended env on success, #f on failure."
+  ;; Try to unify one PATTERN with one TRIPLE given ENV.
+  ;; Returns extended env on success, #f on failure.
   (let ((ps (car pattern))   (pp (cadr pattern))   (po (caddr pattern))
         (ts (car triple))    (tp (cadr triple))     (to (caddr triple)))
     (let* ((e1 (if (var? ps)
@@ -198,8 +214,8 @@
       e3)))
 
 (define (join-patterns patterns triples envs)
-  "For each pattern in PATTERNS, extend every env in ENVS by matching
-   against all TRIPLES.  Returns the list of surviving envs."
+  ;; For each pattern in PATTERNS, extend every env in ENVS by matching
+  ;; against all TRIPLES. Returns the list of surviving envs.
   (if (null? patterns)
       envs
       (let* ((pat  (car patterns))
@@ -216,19 +232,19 @@
         (join-patterns rest triples new-envs))))
 
 (define (project-env vars env)
-  "Pick out only the selected VARS from ENV.
-   Returns an alist ((var . val) ...)."
+  ;; Pick out only the selected VARS from ENV.
+  ;; Returns an alist ((var . val) ...).
   (map (lambda (v) (cons v (env-lookup v env))) vars))
 
 (define (sparql-select st query)
-  "Run a SELECT query against store ST.
-   Returns a list of alists, each mapping variable names to values.
-   With SELECT *, returns the full binding environment as an alist."
+  ;; Run a SELECT query against store ST.
+  ;; Returns a list of alists, each mapping variable names to values.
+  ;; With SELECT *, returns the full binding environment as an alist.
   (let-values (((vars patterns) (parse-sparql query)))
     (let* ((triples   (store-triples st))
            (solutions (join-patterns patterns triples (list '())))
            (select-*? (and (= (length vars) 1)
-                          (string=? (car vars) "*"))))
+                           (string=? (car vars) "*"))))
       (map (lambda (env)
              (if select-*?
                  env                          ;; full binding set
@@ -240,7 +256,7 @@
 ;;;; ──────────────────────────────────────────────────────────────────
 
 (define (display-results results)
-  "Pretty-print a list of query result alists."
+  ;; Pretty-print a list of query result alists.
   (if (null? results)
       (display "  (no results)\n")
       (for-each (lambda (row)
@@ -263,51 +279,52 @@
 ;;;;  6.  Demo
 ;;;; ──────────────────────────────────────────────────────────────────
 
-(let ((st (make-store)))
+(define (main . args)
+  (let ((st (make-store)))
 
-  ;; Load some data
-  (add-triple st "<ex:alice>" "<foaf:name>"  "\"Alice\"")
-  (add-triple st "<ex:alice>" "<foaf:knows>" "<ex:bob>")
-  (add-triple st "<ex:alice>" "<foaf:age>"   "30")
-  (add-triple st "<ex:bob>"   "<foaf:name>"  "\"Bob\"")
-  (add-triple st "<ex:bob>"   "<foaf:age>"   "25")
-  (add-triple st "<ex:carol>" "<foaf:name>"  "\"Carol\"")
-  (add-triple st "<ex:carol>" "<foaf:age>"   "35")
+    ;; Load some data with real IRIs and mixed-case literals
+    (add-triple st "<http://example.org/Alice>" "<foaf:name>"  "\"Alice Smith\"")
+    (add-triple st "<http://example.org/Alice>" "<foaf:knows>" "<http://example.org/Bob>")
+    (add-triple st "<http://example.org/Alice>" "<foaf:age>"   "30")
+    (add-triple st "<http://example.org/Bob>"   "<foaf:name>"  "\"Bob Jones\"")
+    (add-triple st "<http://example.org/Bob>"   "<foaf:age>"   "25")
+    (add-triple st "<http://example.org/Carol>" "<foaf:name>"  "\"Carol White\"")
+    (add-triple st "<http://example.org/Carol>" "<foaf:age>"   "35")
 
-  (print-all-triples st)
+    (print-all-triples st)
 
-  ;; Who does Alice know, and what is their name?
-  (run-query st
-    "Who does Alice know?"
-    "SELECT ?friendName WHERE {
-       <ex:alice> <foaf:knows> ?friend .
-       ?friend    <foaf:name>  ?friendName .
-     }")
+    ;; Who does Alice know, and what is their name?
+    (run-query st
+      "Who does Alice know?"
+      "SELECT ?friendName WHERE {
+         <http://example.org/Alice> <foaf:knows> ?friend .
+         ?friend                    <foaf:name>  ?friendName .
+       }")
 
-  ;; All subjects and their names
-  (run-query st
-    "All names"
-    "SELECT ?s ?name WHERE {
-       ?s <foaf:name> ?name .
-     }")
+    ;; All subjects and their names
+    (run-query st
+      "All names"
+      "SELECT ?s ?name WHERE {
+         ?s <foaf:name> ?name .
+       }")
 
-  ;; All subjects and their ages
-  (run-query st
-    "All ages"
-    "SELECT ?person ?age WHERE {
-       ?person <foaf:age> ?age .
-     }")
+    ;; All subjects and their ages
+    (run-query st
+      "All ages"
+      "SELECT ?person ?age WHERE {
+         ?person <foaf:age> ?age .
+       }")
 
-  ;; SELECT * – return every binding
-  (run-query st
-    "SELECT * (all triples)"
-    "SELECT * WHERE { ?s ?p ?o . }")
+    ;; SELECT * – return every binding
+    (run-query st
+      "SELECT * (all triples)"
+      "SELECT * WHERE { ?s ?p ?o . }")
 
-  ;; Remove a triple and verify
-  (display "After removing <ex:bob> <foaf:age> 25:\n")
-  (remove-triple st "<ex:bob>" "<foaf:age>" "25")
-  (run-query st
-    "All ages after removal"
-    "SELECT ?person ?age WHERE {
-       ?person <foaf:age> ?age .
-     }"))
+    ;; Remove a triple and verify
+    (display "After removing <http://example.org/Bob> <foaf:age> 25:\n")
+    (remove-triple st "<http://example.org/Bob>" "<foaf:age>" "25")
+    (run-query st
+      "All ages after removal"
+      "SELECT ?person ?age WHERE {
+         ?person <foaf:age> ?age .
+       }")))

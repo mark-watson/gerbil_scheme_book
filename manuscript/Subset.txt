@@ -1,1 +1,5 @@
+preface.md
+setup.md
+command_line.md
+gemini.md
 kmeans.md

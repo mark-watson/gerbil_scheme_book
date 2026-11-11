@@ -6,13 +6,13 @@ Groq is rapidly making a name for itself in the AI community as a cloud-based la
 
 The practical implications of Groq's technological innovation are multifaceted, offering a potent combination of affordability, speed, and a diverse selection of open-source models. The efficiency of the LPU translates directly into a more cost-effective pricing structure for users, with a pay-as-you-go model based on the number of tokens processed. This transparent and often significantly cheaper pricing democratizes access to powerful AI, enabling developers and businesses of all sizes to leverage state-of-the-art models without prohibitive upfront costs. The platform's raw speed is a game-changer, facilitating near-instantaneous responses that are crucial for interactive applications like chatbots, content generation tools, and real-time data analysis. Furthermore, Groq's commitment to the open-source community is evident in its extensive library of available models, including popular choices like Meta's Llama series, Mistral's Mixtral, and Google's Gemma. This wide array of options provides users with the flexibility to select the model that best suits their specific needs, all while benefiting from the unparalleled inference speeds and economic advantages offered by Groq's unique hardware.
 
-Here you will learn how to send prompts to the Groq LMS inference service. For information on creating effective prompts please read my blog article [Notes on effectively using AI](https://mark-watson.blogspot.com/2025/08/notes-on-effectively-using-ai.html).
+Here you will learn how to send prompts to the Groq LLM inference service. For information on creating effective prompts please read my blog article [Notes on effectively using AI](https://mark-watson.blogspot.com/2025/08/notes-on-effectively-using-ai.html).
 
 ## Structure of Project and Build Instructions
 
 This project is stored in the directory **gerbil_scheme_book/source_code/groq_llm_inference**. There is one common utility file **groq_inference.ss** and currently two very short example scripts that use this utility:
 
-- kimi2.ss - Uses Moonshot AI's Kimi2 model (MOE 1 trillion paramters, with 32B active).
+- kimi2.ss - Uses Moonshot AI's Kimi2 model (MOE 1 trillion parameters, with 32B active).
 - gpt-oss-120b.ss - Uses OpenAI's open source model gpt-oss-120b.
 
 Both of these models are practical models that are excellent for data manipulation, coding, and general purpose use.
@@ -130,7 +130,7 @@ These two scripts are simple enough to just list without comment:
 ```scheme
 (import :groq/groq_inference)
 
-;; Use Moonshot AI's best kimi2 model (MOE: 1 triliion parameters, 32B resident).
+;; Use Moonshot AI's best kimi2 model (MOE: 1 trillion parameters, 32B resident).
 
 ; Export the `kimi2` procedure from this module
 (export kimi2)
@@ -164,7 +164,7 @@ These two scripts are simple enough to just list without comment:
 
 **Running the kimi2 example:**
 
-Note, the utility must be comiled one time: **gxc groq_inference.ss**. The compiled library by default will be in the directory **~/.gerbil/lib/groq/** because we set this project's module name to **groq** in the file **gerbil.pkg**.
+Note, the utility must be compiled one time: **gxc groq_inference.ss**. The compiled library by default will be in the directory **~/.gerbil/lib/groq/** because we set this project's module name to **groq** in the file **gerbil.pkg**.
 
 ```console
  $ gxi -l kimi2.ss                   
@@ -185,16 +185,16 @@ Counter-arguments / alternatives
 
 **Running the gpt-oss-120b example:**
 
-```console
+````console
 $ gxi -l gpt-oss-120b.ss
 > (displayln (gpt-oss-120b "write a recursive Haskell function 'factorial'. Only show the code."))
-``haskell
+```haskell
 factorial :: Integer -> Integer
 factorial 0 = 1
 factorial n = n * factorial (n - 1)
 ```
 >
-```
+````
 
 ## Optional Practice Problems
 

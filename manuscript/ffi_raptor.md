@@ -78,7 +78,7 @@ static char* parse_file_to_ntriples(const char* filename, const char* syntax_nam
   base_uri = raptor_uri_copy(uri);
 
   /* Parse file; on each triple our handler appends to iostr */
-  raptor_parser_parse_file(parser, uri, base_uri);
+  int rc = raptor_parser_parse_file(parser, uri, base_uri);
 
   /* Clean up parser/URIs; free iostr LAST to finalize string */
   raptor_free_parser(parser);
@@ -87,6 +87,12 @@ static char* parse_file_to_ntriples(const char* filename, const char* syntax_nam
   raptor_free_memory(uri_str);
 
   raptor_free_iostream(iostr); /* this finalizes out_string/out_len */
+
+  if (rc != 0) {
+    if (out_string) raptor_free_memory(out_string);
+    raptor_free_world(world);
+    return NULL;
+  }
 
   /* Copy the raptor-allocated string into standard malloc'd memory,
      then free the raptor buffer to avoid a memory leak. */
@@ -107,14 +113,20 @@ static char* parse_file_to_ntriples(const char* filename, const char* syntax_nam
     (char-string       ;; filename
      char-string)      ;; syntax name, e.g., "turtle", "rdfxml", or "guess"
     char-string
-    "parse_file_to_ntriples"))
+    #<<'C'
+    char* res = parse_file_to_ntriples(___arg1, ___arg2);
+    ___return(res);
+    ___AT_END
+    if (res) free(res);
+'C'
+))
 ```
 
 The C portion begins by including the **raptor2.h** header and defining a callback function, **triples_to_iostr**, which takes RDF statements and writes them to a Raptor **iostream** in N-Triples format. This callback escapes subjects, predicates, and objects correctly and ensures triples are terminated with a period and newline, conforming to the N-Triples standard. The main work is performed in **parse_file_to_ntriples**, which initializes a Raptor world and parser, configures the statement handler to use the callback, and sets up an **iostream** that accumulates parsed triples into a string buffer. Error checks are in place at every step, ensuring resources such as the world, parser, URIs, and iostream are properly freed if initialization fails.
 
 After setup, the parser processes the input file identified by its filename and syntax. Each RDF statement is converted into N-Triples and appended to the output string via the **iostream**. Once parsing is complete, the parser, URIs, iostream, and world are released.
 
-An important detail in the memory management: Raptor's **raptor_new_iostream_to_string** allocates its output buffer using an internal allocator, so the caller is responsible for freeing it with **raptor_free_memory**. The C function uses **strdup** to copy the Raptor-allocated string into standard **malloc**'d memory, then immediately frees the original with **raptor_free_memory**. This prevents a memory leak that would otherwise occur on every call. The copy is then returned to Gambit, which makes its own GC-managed copy into a Scheme string via the **char-string** return type convention.
+An important detail in the memory management: Raptor's **raptor_new_iostream_to_string** allocates its output buffer using an internal allocator, so the caller is responsible for freeing it with **raptor_free_memory**. The C function uses **strdup** to copy the Raptor-allocated string into standard **malloc**'d memory, then immediately frees the original with **raptor_free_memory**. Because Gambit's **char-string** return type copies the C string onto the Scheme heap without freeing the C pointer, we use the `___AT_END` cleanup block inside the `define-c-lambda` body to call `free(res)` after `___return(res)`. This avoids leaking the C buffer on every parse call. If parsing fails (`rc != 0`), the C function returns `NULL`, which Gambit translates to `#f` in Scheme, triggering the error check in **parse-rdf-file**.
 
 On the Scheme side, the **define-c-lambda** form binds this C function as the procedure **raptor-parse-file->ntriples**, exposing it with the expected **(filename syntax-name) -> ntriples-string** interface.
 
@@ -269,9 +281,15 @@ This Gerbil Scheme test code in the file **test.ss** exercises all three API lev
                     (car triples)
                     "parse-rdf-file->triples structure"))
 
-    ;; 5. Error handling: nonexistent file returns empty string
+    ;; 5. Error handling: nonexistent file returns #f and parse-rdf-file raises
     (let ((bad (raptor-parse-file->ntriples "no-such-file.ttl" "turtle")))
-      (assert-equal "" bad "nonexistent file returns empty string"))
+      (assert-equal #f bad "nonexistent file returns #f"))
+
+    (let ((raised? #f))
+      (with-catch
+        (lambda (e) (set! raised? #t))
+        (lambda () (parse-rdf-file "no-such-file.ttl" "turtle")))
+      (assert-equal #t raised? "parse-rdf-file raises on error"))
 
     ;; Clean up
     (when (file-exists? ttl-file)
@@ -282,7 +300,7 @@ This Gerbil Scheme test code in the file **test.ss** exercises all three API lev
 
 The test imports the FFI wrapper and exports a **main** entry point. The **assert-equal** helper prints PASS/FAIL labels and exits with non-zero status on mismatch. In function **main**, a small Turtle document defines a simple triple using the ex: prefix; the corresponding expected N-Triples string is the fully expanded IRI form with a terminating period and newline.
 
-The test proceeds in five phases: first it calls **raptor-parse-file->ntriples** with explicit "turtle" syntax; then repeats using "guess" to confirm auto-detection yields identical output; third, it tests the high-level **parse-rdf-file** wrapper with its default syntax; fourth, it exercises **parse-rdf-file->triples** and verifies that the returned Scheme list contains the correct subject, predicate, and object strings; finally, it confirms that attempting to parse a nonexistent file produces an empty string rather than crashing. After all assertions pass, the temporary file is deleted.
+The test proceeds in five phases: first it calls **raptor-parse-file->ntriples** with explicit "turtle" syntax; then repeats using "guess" to confirm auto-detection yields identical output; third, it tests the high-level **parse-rdf-file** wrapper with its default syntax; fourth, it exercises **parse-rdf-file->triples** and verifies that the returned Scheme list contains the correct subject, predicate, and object strings; finally, it confirms that attempting to parse a nonexistent file returns `#f` from the low-level FFI and raises an error in **parse-rdf-file**. After all assertions pass, the temporary file is deleted.
 
 ## Build System
 

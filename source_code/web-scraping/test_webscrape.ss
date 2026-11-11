@@ -1,46 +1,79 @@
 ;; File: test_webscrape.ss
-(import "webscrape")
-(import :std/format)
+;; Offline tests for HTML parsing routines using a fixture
+(import "webscrape" :std/format)
+(export main)
 
-(def (run-tests)
-  (let ((uri "https://markwatson.com"))
-    (displayln "=============================================")
-    (displayln "1. TESTING PLAIN TEXT EXTRACTION FROM: " uri)
-    (displayln "=============================================")
-    (let ((text (get-plain-text uri)))
-      (displayln (substring text 0 (min (string-length text) 600)))
-      (displayln "\n... [truncated] ...\n"))
+(def sample-html
+#<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sample Web Page</title>
+  <style>body { font-family: sans-serif; }</style>
+  <script>console.log("ignore me");</script>
+</head>
+<body>
+  <!-- Header section -->
+  <h1>Welcome to Knowledge Graph</h1>
+  <div class="intro">
+    <p>This is a <strong>sample paragraph</strong> with <em>italic text</em> and a &lt;tag&gt; example.</p>
+    <p>Double entity test: &amp;lt; should stay &amp;lt; and not turn into a tag; quote is &#8217;special&#8217;.</p>
+  </div>
+  <h2>Useful Links</h2>
+  <ul>
+    <li><a href="https://example.org/docs">Documentation</a></li>
+    <li><a href="/about.html">About Page</a></li>
+    <li><a href="contact.html">Contact Us</a></li>
+  </ul>
+  <h3>Footer Information</h3>
+  <div>All rights reserved &copy; 2026.</div>
+</body>
+</html>
+HTML
+)
 
-    (displayln "=============================================")
-    (displayln "2. TESTING MARKDOWN EXTRACTION FROM: " uri)
-    (displayln "=============================================")
-    (let ((md (get-markdown uri)))
-      (displayln (substring md 0 (min (string-length md) 600)))
-      (displayln "\n... [truncated] ...\n"))
+(def (assert-equal expected actual label)
+  (if (equal? expected actual)
+      (begin (displayln "PASS: " label) #t)
+      (begin
+        (displayln "FAIL: " label)
+        (displayln "  Expected: " expected)
+        (displayln "  Actual:   " actual)
+        (exit 1))))
 
-    (displayln "=============================================")
-    (displayln "3. TESTING HEADERS EXTRACTION (H1, H2, H3) FROM: " uri)
-    (displayln "=============================================")
-    (let ((headers (get-headers uri)))
-      (for-each (lambda (h)
-                  (let ((level (car h))
-                        (text (cadr h)))
-                    (displayln (make-string level #\#) " " text)))
-                headers)
-      (displayln ""))
+(def (main . args)
+  (displayln "=== Running Web Scraping Offline Unit Tests ===")
 
-    (displayln "=============================================")
-    (displayln "4. TESTING LINKS EXTRACTION FROM: " uri)
-    (displayln "=============================================")
-    (let ((links (get-links uri)))
-      (displayln "Found " (length links) " links. Printing the first 15:")
-      (let loop ((count 0) (lst links))
-        (when (and (< count 15) (not (null? lst)))
-          (let* ((link (car lst))
-                 (url (car link))
-                 (text (cadr link)))
-            (displayln (format "  ~a. [~a] -> ~a" (+ count 1) text url))
-            (loop (+ count 1) (cdr lst)))))
-      (displayln ""))))
+  ;; 1. Entity decoding test
+  (assert-equal "&lt;" (unescape-html-entities "&amp;lt;") "Double unescape preserves &lt;")
+  (assert-equal "It’s" (unescape-html-entities "It&#8217;s") "Decimal numeric entity &#8217;")
+  (assert-equal "It's" (unescape-html-entities "It&#x27;s") "Hex numeric entity &#x27;")
 
-(run-tests)
+  ;; 2. Plain text extraction
+  (let ((text (html->text sample-html)))
+    (assert-equal #t (and (string-contains text "Welcome to Knowledge Graph") #t) "html->text contains h1")
+    (assert-equal #t (not (string-contains text "ignore me")) "html->text stripped script")
+    (assert-equal #t (not (string-contains text "font-family")) "html->text stripped style")
+    (assert-equal #t (and (string-contains text "<tag>") #t) "html->text unescaped &lt;tag&gt;"))
+
+  ;; 3. Headers extraction
+  (let ((headers (html->headers sample-html)))
+    (assert-equal 3 (length headers) "Found 3 headers")
+    (assert-equal '(1 "Welcome to Knowledge Graph") (car headers) "Header 1 correct")
+    (assert-equal '(2 "Useful Links") (cadr headers) "Header 2 correct")
+    (assert-equal '(3 "Footer Information") (caddr headers) "Header 3 correct"))
+
+  ;; 4. Links extraction with relative URL resolution
+  (let ((links (html->links sample-html "https://example.org/base/index.html")))
+    (assert-equal 3 (length links) "Found 3 links")
+    (assert-equal '("https://example.org/docs" "Documentation") (car links) "Absolute link in order")
+    (assert-equal '("https://example.org/about.html" "About Page") (cadr links) "Root-relative link resolved")
+    (assert-equal '("https://example.org/base/contact.html" "Contact Us") (caddr links) "Path-relative link resolved"))
+
+  ;; 5. Markdown extraction
+  (let ((md (html->markdown sample-html)))
+    (assert-equal #t (and (string-contains md "# Welcome to Knowledge Graph") #t) "Markdown h1")
+    (assert-equal #t (and (string-contains md "**sample paragraph**") #t) "Markdown strong/bold")
+    (assert-equal #t (and (string-contains md "[Documentation](https://example.org/docs)") #t) "Markdown link"))
+
+  (displayln "All web scraping offline tests passed successfully!"))

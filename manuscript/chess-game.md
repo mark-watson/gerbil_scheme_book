@@ -4,6 +4,9 @@ Chess has served as a benchmark problem for artificial intelligence since the ve
 
 In this chapter we implement a fully playable chess engine and AI bot in Gerbil Scheme that consists of three modules totaling roughly 900 lines of code. The engine correctly handles every rule of chess, including en passant, castling, pawn promotion, and the fifty-move draw rule. The AI opponent uses iterative deepening negamax search with alpha-beta pruning, a transposition table for caching previously evaluated positions, a quiescence search to avoid the horizon effect on captures, and piece-square tables that encode positional knowledge. The interactive command-line interface renders a coloured Unicode board in the terminal and accepts moves in Universal Chess Interface (UCI) notation.
 
+> [!NOTE]
+> The code listings in this chapter present the key definitions and search algorithms. Complete verbatim sources for `engine.ss`, `ai.ss`, `cli.ss`, and `perft.ss` are in the companion `source_code/chess-game/` directory.
+
 ## Theoretical Background
 
 ### Board Representation
@@ -466,8 +469,10 @@ The transposition table is a hash table mapping Zobrist hashes to cached search 
 
 ```scheme
 (def TT_EXACT 0)   ; Score is exact
-(def TT_ALPHA 1)   ; Score is an upper bound (failed low)
-(def TT_BETA  2)   ; Score is a lower bound (failed high)
+(def TT_LOWER 1)   ; Score is a lower bound (failed high, >= beta)
+(def TT_UPPER 2)   ; Score is an upper bound (failed low, <= alpha)
+(def TT_ALPHA TT_UPPER)
+(def TT_BETA  TT_LOWER)
 
 (defstruct tt-entry (depth score flag best-move) transparent: #t)
 
@@ -494,8 +499,8 @@ The core search function implements negamax with alpha-beta pruning and transpos
               (flag (tt-entry-flag tt-entry)))
           (cond
             ((= flag TT_EXACT) (set! alpha score) (set! beta score))
-            ((= flag TT_ALPHA) (set! alpha (max alpha score)))
-            ((= flag TT_BETA)  (set! beta (min beta score))))))
+            ((= flag TT_LOWER) (set! alpha (max alpha score)))
+            ((= flag TT_UPPER) (set! beta (min beta score))))))
       
       (if (>= alpha beta)
         alpha  ; TT cutoff
@@ -518,8 +523,8 @@ The core search function implements negamax with alpha-beta pruning and transpos
                    (begin
                      ;; Store result in transposition table
                      (let ((flag (cond
-                                   ((<= best-score original-alpha) TT_BETA)
-                                   ((>= best-score beta) TT_ALPHA)
+                                   ((<= best-score original-alpha) TT_UPPER)
+                                   ((>= best-score beta) TT_LOWER)
                                    (else TT_EXACT))))
                        (hash-put! transposition-table (board-zobrist-hash b)
                                   (make-tt-entry depth best-score flag best-move)))
@@ -888,7 +893,7 @@ The perft suite provides a disciplined correctness gate and a chess engine that 
 
 A natural next step is to extend the search with **null move pruning** (trying a pass move to detect positions where the opponent has no effective threats) and **late move reductions** (searching the last few moves at a reduced depth), which together can double the effective search depth at no additional node cost.
 
-## Practice Problems
+## Optional Practice Problems
 
 **Exercise 1: Display Board State as Unicode Art**
 

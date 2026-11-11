@@ -1,8 +1,8 @@
+GERBIL_PATH := $(CURDIR)/../NLP/.gerbil
+export GERBIL_PATH
+
 test:
 	gxi test.ss
-
-test-summarize:
-	gxi summarize.ss
 
 clean:
 	rm -rf .gerbil *~

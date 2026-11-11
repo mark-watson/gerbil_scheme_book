@@ -3,7 +3,7 @@
 
 The example for this chapter is a complete, self-contained bridge between Gerbil Scheme and a well-established C RDF toolchain. It demonstrates how to load RDF data into an in-memory store and execute SPARQL queries from Gerbil via a Foreign Function Interface (FFI). Under the hood it uses Serd and Sord to parse and hold triples, and Rasqal/Raptor to prepare, execute, and serialize SPARQL results. The project ships with both a small C demo CLI to test the C language part of this project and a Gerbil-based client, making it easy to explore end-to-end from raw data files to query results printed on the console.
 
-The core is a compact C wrapper that exposes four functions: initialize the store with a data file (rdf_init), run a SPARQL query and get results as a string (rdf_query_copy), and clean up (rdf_free). Data is parsed with Serd and stored in Sord’s in-memory model; queries are executed with Rasqal, and results are serialized to TSV by Raptor with the column header removed for line-per-row output. On the Gerbil side, **rdfwrap.ss** defines the FFI bindings and test.ss provides a simple CLI program, illustrating a clean pattern for calling native libraries from Gerbil without excess machinery.
+The core is a compact C wrapper that exposes three primary functions: initialize the store with a data file (rdf_init), run a SPARQL query and get results as a string (rdf_query_copy), and clean up (rdf_free). Data is parsed with Serd and stored in Sord’s in-memory model; queries are executed with Rasqal, and results are serialized to TSV by Raptor with the column header removed for line-per-row output. On the Gerbil side, **rdfwrap.ss** defines the FFI bindings and test.ss provides a simple CLI program, illustrating a clean pattern for calling native libraries from Gerbil without excess machinery.
 
 Using the project is straightforward. After installing the required libraries (Homebrew recipes are listed in the README for macOS and there is a separate Linux Makefile for Linux users), make produces a shared library, a C demo (DEMO_rdfwrap), and a Gerbil executable (TEST_client). You can point either binary at a small example dataset (TTL or NT representations are included) and supply a SPARQL SELECT query to print results. The Gerbil client supports sensible defaults, inline queries, and reading queries from files via the @file convention, making it convenient for quick experiments, regression checks, or embedding SPARQL query capabilities into larger Gerbil programs.
 
@@ -240,7 +240,7 @@ Here we write a wrapper that will later be called from Gerbil Scheme code.
 
 The following listing shows the wrapper **C-source/wrapper.c**. This C wrapper provides a simplified, high-level interface for handling RDF data by leveraging the combined power of the serd, sord, rasqal, and raptor2 libraries. The primary goal of this wrapper is to abstract away the complexities of library initialization, data parsing, query execution, and results serialization. It exposes a minimal API for loading an RDF graph from a Turtle file and executing SPARQL queries against it, returning the results in a straightforward, easy-to-parse string format. This makes it an ideal solution for applications that need to embed RDF query functionality without managing the intricate details of the underlying RDF processing stack.
 
-```scheme
+```c
 // C-source/wrapper.c
 #define _GNU_SOURCE
 #include <stdio.h>

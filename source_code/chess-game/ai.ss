@@ -16,7 +16,7 @@
         nodes-visited
         max-depth
         transposition-table
-        TT_EXACT TT_ALPHA TT_BETA
+        TT_EXACT TT_LOWER TT_UPPER TT_ALPHA TT_BETA
         make-tt-entry tt-entry
         move-value
         search
@@ -178,8 +178,10 @@
 
 ;; Transposition Table Constants and Struct
 (def TT_EXACT 0)
-(def TT_ALPHA 1)
-(def TT_BETA 2)
+(def TT_LOWER 1) ;; Fail-high: score >= beta (lower bound on true score)
+(def TT_UPPER 2) ;; Fail-low:  score <= alpha (upper bound on true score)
+(def TT_ALPHA TT_UPPER)
+(def TT_BETA  TT_LOWER)
 
 (defstruct tt-entry
   (depth
@@ -202,18 +204,20 @@
            (original-alpha alpha))
       
       (when (and tt-entry (>= (tt-entry-depth tt-entry) depth))
-        (let ((score (tt-entry-score tt-entry)))
+        (let ((score (tt-entry-score tt-entry))
+              (flag (tt-entry-flag tt-entry)))
           (cond
             ((> score 29000) (set! score (- score (- max-depth depth))))
             ((< score -29000) (set! score (+ score (- max-depth depth)))))
           
-          (let ((flag (tt-entry-flag tt-entry)))
-            (cond
-              ((= flag TT_EXACT) (set! alpha score) (set! beta score))
-              ((and (= flag TT_ALPHA) (<= score alpha)) (set! alpha score) (set! beta score))
-              ((and (= flag TT_BETA) (>= score beta)) (set! alpha score) (set! beta score))
-              ((= flag TT_ALPHA) (set! alpha (max alpha score)))
-              ((= flag TT_BETA) (set! beta (min beta score)))))))
+          (cond
+            ((= flag TT_EXACT)
+             (set! alpha score)
+             (set! beta score))
+            ((= flag TT_LOWER)
+             (set! alpha (max alpha score)))
+            ((= flag TT_UPPER)
+             (set! beta (min beta score))))))
       
       (if (>= alpha beta)
         alpha
@@ -234,8 +238,8 @@
                  (if (or (null? moves) (>= current-alpha beta))
                    (begin
                      (let ((flag (cond
-                                   ((<= best-score original-alpha) TT_BETA)
-                                   ((>= best-score beta) TT_ALPHA)
+                                   ((<= best-score original-alpha) TT_UPPER)
+                                   ((>= best-score beta) TT_LOWER)
                                    (else TT_EXACT)))
                            (stored-score (cond
                                            ((> best-score 29000) (+ best-score (- max-depth depth)))
@@ -292,7 +296,7 @@
                       (loop (cdr moves) (max curr-alpha score)))))))))))))
 
 (def (get-best-move b (depth 3))
-  (when (> (table-length transposition-table) 500000)
+  (when (> (hash-length transposition-table) 500000)
     (set! transposition-table (make-hash-table)))
   
   (let ((best-move #f)

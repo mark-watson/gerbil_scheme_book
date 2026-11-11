@@ -59,27 +59,28 @@
     rows))
 
 (def (main)
+  (set-seed! 42)
   (let* ((data (preprocess-wisconsin (load-csv "data/cleaned_wisconsin_cancer_data.csv"))))
     (displayln (format "Loaded ~a examples." (length data)))
     
     (let* ((det (build-detector data 10)))
-      (displayln (format "\nTraining set:  ~a" (length (hash-ref det 'training))))
-      (displayln (format "Cross-val set: ~a" (length (hash-ref det 'cross-validation))))
-      (displayln (format "Test set:      ~a" (length (hash-ref det 'testing))))
+      (displayln (format "\nTraining set:  ~a" (length (detector-training det))))
+      (displayln (format "Cross-val set: ~a" (length (detector-cross-validation det))))
+      (displayln (format "Test set:      ~a" (length (detector-testing det))))
       
       (train det)
       
       (displayln (format "\nModel: bestEps=~a, features=~a"
-                         (format-decimal (hash-ref det 'best-eps) 4)
-                         (hash-ref det 'num-features)))
+                         (format-decimal (detector-best-eps det) 4)
+                         (detector-num-features det)))
       
       ;; Assertions
-      (unless (> (hash-ref det 'best-eps) 0.0)
+      (unless (> (detector-best-eps det) 0.0)
         (error "epsilon should be positive"))
-      (unless (= (vector-length (hash-ref det 'mu)) 10)
+      (unless (= (vector-length (detector-mu det)) 10)
         (error "mu should have 10 elements"))
       
-      (let ((testing (hash-ref det 'testing)))
+      (let ((testing (detector-testing det)))
         (when (> (length testing) 0)
           (let* ((s (car testing))
                  (actual (if (> (vector-ref s 9) 0.5) "anomaly" "normal"))
@@ -89,4 +90,4 @@
       (displayln "All assertions passed.")
       (displayln "=== Test complete ==="))))
 
-(main)
+(export main)

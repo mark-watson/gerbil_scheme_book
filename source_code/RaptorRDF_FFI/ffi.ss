@@ -61,7 +61,7 @@ static char* parse_file_to_ntriples(const char* filename, const char* syntax_nam
   base_uri = raptor_uri_copy(uri);
 
   /* Parse file; on each triple our handler appends to iostr */
-  raptor_parser_parse_file(parser, uri, base_uri);
+  int rc = raptor_parser_parse_file(parser, uri, base_uri);
 
   /* Clean up parser/URIs; free iostr LAST to finalize string */
   raptor_free_parser(parser);
@@ -70,6 +70,12 @@ static char* parse_file_to_ntriples(const char* filename, const char* syntax_nam
   raptor_free_memory(uri_str);
 
   raptor_free_iostream(iostr); /* this finalizes out_string/out_len */
+
+  if (rc != 0) {
+    if (out_string) raptor_free_memory(out_string);
+    raptor_free_world(world);
+    return NULL;
+  }
 
   /* Copy the raptor-allocated string into standard malloc'd memory,
      then free the raptor buffer to avoid a memory leak. */
@@ -90,7 +96,13 @@ static char* parse_file_to_ntriples(const char* filename, const char* syntax_nam
     (char-string       ;; filename
      char-string)      ;; syntax name, e.g., "turtle", "rdfxml", or "guess"
     char-string
-    "parse_file_to_ntriples"))
+    #<<'C'
+    char* res = parse_file_to_ntriples(___arg1, ___arg2);
+    ___return(res);
+    ___AT_END
+    if (res) free(res);
+'C'
+))
 
 ;;; ---- High-level Scheme API --------------------------------------------------
 

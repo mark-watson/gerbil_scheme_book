@@ -1,18 +1,28 @@
 ;; File: webscrape.ss
 (import :std/net/request
-        :std/text/json
-        :std/net/uri
         :std/format
-        :std/pregexp)
+        :std/pregexp
+        :std/srfi/13)
 
 (export get-plain-text
         get-markdown
         get-links
-        get-headers)
+        get-headers
+        html->text
+        html->markdown
+        html->links
+        html->headers
+        unescape-html-entities
+        resolve-url)
+
+;; Default User-Agent: identify our tool honestly per web standards
+(def default-user-agent
+  (or (getenv "WEBSCRAPE_USER_AGENT" #f)
+      "GerbilWebScraper/1.0 (+https://github.com/mark-watson/gerbil_scheme_book; contact@markwatson.com)"))
 
 ;; Fetch raw HTML text from a URI
-(def (fetch-html uri)
-  (let* ((headers `(("User-Agent" . "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+(def (fetch-html uri (user-agent default-user-agent))
+  (let* ((headers `(("User-Agent" . ,user-agent)
                     ("Accept" . "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")))
          (response (http-get uri headers: headers)))
     (if (= (request-status response) 200)
@@ -29,20 +39,38 @@
           (loop next-start (cons pos acc)))
         (reverse acc)))))
 
-;; Unescape standard HTML entities
+(def (replace-numeric-entities str hex?)
+  (let ((pat (if hex? "&#x([0-9a-fA-F]+);" "&#(\\d+);"))
+        (base (if hex? 16 10)))
+    (let loop ((s str))
+      (let ((m (pregexp-match-positions pat s)))
+        (if (not m)
+            s
+            (let* ((full (car m))
+                   (grp (cadr m))
+                   (digits (substring s (car grp) (cdr grp)))
+                   (n (string->number digits base))
+                   (ch-str (if (and n (< n 65536))
+                               (string (integer->char n))
+                               ""))
+                   (prefix (substring s 0 (car full)))
+                   (suffix (substring s (cdr full) (string-length s))))
+              (loop (string-append prefix ch-str suffix))))))))
+
+;; Unescape standard and numeric HTML entities.
+;; &amp; is decoded LAST so entities like &amp;lt; decode to &lt;, not <.
 (def (unescape-html-entities str)
   (let* ((s (pregexp-replace* "&nbsp;" str " "))
-         (s (pregexp-replace* "&amp;" s "&"))
          (s (pregexp-replace* "&lt;" s "<"))
          (s (pregexp-replace* "&gt;" s ">"))
          (s (pregexp-replace* "&quot;" s "\""))
          (s (pregexp-replace* "&#39;" s "'"))
-         (s (pregexp-replace* "&apos;" s "'")))
+         (s (pregexp-replace* "&apos;" s "'"))
+         (s (replace-numeric-entities s #f))
+         (s (replace-numeric-entities s #t))
+         ;; &amp; decoded last
+         (s (pregexp-replace* "&amp;" s "&")))
     s))
-
-;; Trim leading and trailing whitespace
-(def (string-trim str)
-  (pregexp-replace "^\\s+" (pregexp-replace "\\s+$" str "") ""))
 
 ;; Clean up consecutive whitespace and newlines
 (def (clean-whitespace str)
@@ -59,88 +87,88 @@
          (s (string-trim s)))
     s))
 
-;; API 1: Get plain text from web URI
-(def (get-plain-text uri)
-  (let* ((html (fetch-html uri))
-         ;; Strip script tags and their content
-         (h (pregexp-replace* "<[sS][cC][rR][iI][pP][tT][^>]*>([\\s\\S]*?)</[sS][cC][rR][iI][pP][tT]>" html ""))
-         ;; Strip style tags and their content
-         (h (pregexp-replace* "<[sS][tT][yY][lL][eE][^>]*>([\\s\\S]*?)</[sS][tT][yY][lL][eE]>" h ""))
+;; Resolve relative URLs against a base URI
+(def (resolve-url base rel)
+  (cond
+   ((or (not base) (string-null? base)) rel)
+   ((or (string-prefix? "http://" rel) (string-prefix? "https://" rel)) rel)
+   ((string-prefix? "//" rel) (string-append "https:" rel))
+   ((string-prefix? "/" rel)
+    (let ((m (pregexp-match "^(https?://[^/]+)" base)))
+      (if m (string-append (cadr m) rel) rel)))
+   (else
+    (let ((m (pregexp-match "^(https?://.*/)" base)))
+      (if m (string-append (cadr m) rel) (string-append base "/" rel))))))
+
+;;; ---- Pure Parsers (offline testable) ---------------------------------------
+
+;; Parse plain text from HTML string
+(def (html->text html)
+  (let* (;; Strip script tags and content
+         (h (pregexp-replace* "(?i:<script[^>]*>[\\s\\S]*?</script>)" html ""))
+         ;; Strip style tags and content
+         (h (pregexp-replace* "(?i:<style[^>]*>[\\s\\S]*?</style>)" h ""))
          ;; Strip HTML comments
-         (h (pregexp-replace* "<!--([\\s\\S]*?)-->" h ""))
-         ;; Replace block elements with newlines to avoid text squashing
-         (h (pregexp-replace* "<[bB][rR]\\s*/?>|</?[pP]>|</?[dD][iI][vV]>|</?[tT][rR]>|</?[hH][1-6]>" h "\n"))
+         (h (pregexp-replace* "<!--[\\s\\S]*?-->" h ""))
+         ;; Replace block elements (including tags with attributes) with newlines
+         (h (pregexp-replace* "(?i:</?(?:p|div|tr|table|ul|ol|li|h[1-6])\\b[^>]*>|</?br\\b\\s*/?>)" h "\n"))
          ;; Strip all remaining HTML tags
          (h (pregexp-replace* "<[^>]*>" h " "))
-         ;; Resolve HTML entities
+         ;; Resolve HTML entities (&amp; last)
          (h (unescape-html-entities h))
          ;; Standardize whitespace
          (h (clean-whitespace h)))
     h))
 
-;; API 2: Get Markdown text from URI
-(def (get-markdown uri)
-  (let* ((html (fetch-html uri))
-         ;; Strip script, style, and comments
-         (h (pregexp-replace* "<[sS][cC][rR][iI][pP][tT][^>]*>([\\s\\S]*?)</[sS][cC][rR][iI][pP][tT]>" html ""))
-         (h (pregexp-replace* "<[sS][tT][yY][lL][eE][^>]*>([\\s\\S]*?)</[sS][tT][yY][lL][eE]>" h ""))
-         (h (pregexp-replace* "<!--([\\s\\S]*?)-->" h ""))
-         
+;; Parse Markdown from HTML string
+(def (html->markdown html)
+  (let* (;; Strip script, style, comments
+         (h (pregexp-replace* "(?i:<script[^>]*>[\\s\\S]*?</script>)" html ""))
+         (h (pregexp-replace* "(?i:<style[^>]*>[\\s\\S]*?</style>)" h ""))
+         (h (pregexp-replace* "<!--[\\s\\S]*?-->" h ""))
          ;; Convert headers
-         (h (pregexp-replace* "<[hH]1[^>]*>([\\s\\S]*?)</[hH]1>" h "\n# \\1\n"))
-         (h (pregexp-replace* "<[hH]2[^>]*>([\\s\\S]*?)</[hH]2>" h "\n## \\1\n"))
-         (h (pregexp-replace* "<[hH]3[^>]*>([\\s\\S]*?)</[hH]3>" h "\n### \\1\n"))
-         (h (pregexp-replace* "<[hH]4[^>]*>([\\s\\S]*?)</[hH]4>" h "\n#### \\1\n"))
-         (h (pregexp-replace* "<[hH]5[^>]*>([\\s\\S]*?)</[hH]5>" h "\n##### \\1\n"))
-         (h (pregexp-replace* "<[hH]6[^>]*>([\\s\\S]*?)</[hH]6>" h "\n###### \\1\n"))
-         
+         (h (pregexp-replace* "(?i:<h1[^>]*>([\\s\\S]*?)</h1\\s*>)" h "\n# \\1\n"))
+         (h (pregexp-replace* "(?i:<h2[^>]*>([\\s\\S]*?)</h2\\s*>)" h "\n## \\1\n"))
+         (h (pregexp-replace* "(?i:<h3[^>]*>([\\s\\S]*?)</h3\\s*>)" h "\n### \\1\n"))
+         (h (pregexp-replace* "(?i:<h4[^>]*>([\\s\\S]*?)</h4\\s*>)" h "\n#### \\1\n"))
+         (h (pregexp-replace* "(?i:<h5[^>]*>([\\s\\S]*?)</h5\\s*>)" h "\n##### \\1\n"))
+         (h (pregexp-replace* "(?i:<h6[^>]*>([\\s\\S]*?)</h6\\s*>)" h "\n###### \\1\n"))
          ;; Convert bold and italic styling
-         (h (pregexp-replace* "<[sS][tT][rR][oO][nN][gG][^>]*>([\\s\\S]*?)</[sS][tT][rR][oO][nN][gG]>" h "**\\1**"))
-         (h (pregexp-replace* "<[bB][^>]*>([\\s\\S]*?)</[bB]>" h "**\\1**"))
-         (h (pregexp-replace* "<[eE][mM][^>]*>([\\s\\S]*?)</[eE][mM]>" h "*\\1*"))
-         (h (pregexp-replace* "<[iI][^>]*>([\\s\\S]*?)</[iI]>" h "*\\1*"))
-         
+         (h (pregexp-replace* "(?i:<(?:strong|b)\\b[^>]*>([\\s\\S]*?)</(?:strong|b)\\s*>)" h "**\\1**"))
+         (h (pregexp-replace* "(?i:<(?:em|i)\\b[^>]*>([\\s\\S]*?)</(?:em|i)\\s*>)" h "*\\1*"))
          ;; Convert links
-         (h (pregexp-replace* "<[aA][^>]*[hH][rR][eE][fF]=\"([^\"]*)\"[^>]*>([\\s\\S]*?)</[aA]>" h "[\\2](\\1)"))
-         (h (pregexp-replace* "<[aA][^>]*[hH][rR][eE][fF]='([^']*)'[^>]*>([\\s\\S]*?)</[aA]>" h "[\\2](\\1)"))
-         (h (pregexp-replace* "<[aA][^>]*[hH][rR][eE][fF]=([^\\s>\"']+)[^>]*>([\\s\\S]*?)</[aA]>" h "[\\2](\\1)"))
-         
+         (h (pregexp-replace* "(?i:<a\\b[^>]*?\\bhref\\s*=\\s*\"([^\"]*)\"[^>]*>([\\s\\S]*?)</a\\s*>)" h "[\\2](\\1)"))
+         (h (pregexp-replace* "(?i:<a\\b[^>]*?\\bhref\\s*=\\s*'([^']*)'[^>]*>([\\s\\S]*?)</a\\s*>)" h "[\\2](\\1)"))
          ;; Convert list items
-         (h (pregexp-replace* "<[lL][iI][^>]*>([\\s\\S]*?)</[lL][iI]>" h "\n- \\1"))
-         
+         (h (pregexp-replace* "(?i:<li[^>]*>([\\s\\S]*?)</li\\s*>)" h "\n- \\1"))
          ;; Convert paragraphs and line breaks
-         (h (pregexp-replace* "<[pP][^>]*>([\\s\\S]*?)</[pP]>" h "\n\n\\1\n\n"))
-         (h (pregexp-replace* "<[bB][rR]\\s*/?>" h "\n"))
-         
-         ;; Strip any other remaining tags
+         (h (pregexp-replace* "(?i:<p[^>]*>([\\s\\S]*?)</p\\s*>)" h "\n\n\\1\n\n"))
+         (h (pregexp-replace* "(?i:<br\\s*/?>)" h "\n"))
+         ;; Strip remaining tags
          (h (pregexp-replace* "<[^>]*>" h " "))
          (h (unescape-html-entities h))
          (h (clean-whitespace h)))
     h))
 
-;; API 3: Get links from URI (returns list of (url text) lists)
-(def (get-links uri)
-  (let* ((html (fetch-html uri))
-         (pattern1 "<[aA][^>]*[hH][rR][eE][fF]=\"([^\"]*)\"[^>]*>([\\s\\S]*?)</[aA]>")
-         (pattern2 "<[aA][^>]*[hH][rR][eE][fF]='([^']*)'[^>]*>([\\s\\S]*?)</[aA]>")
-         (pattern3 "<[aA][^>]*[hH][rR][eE][fF]=([^\\s>\"']+)[^>]*>([\\s\\S]*?)</[aA]>")
-         (matches1 (find-all-matches pattern1 html))
-         (matches2 (find-all-matches pattern2 html))
-         (matches3 (find-all-matches pattern3 html))
-         (all-matches (append matches1 matches2 matches3)))
+;; Extract links in document order, resolving relative URLs when base-uri is provided
+(def (html->links html (base-uri #f))
+  (let* ((pattern "(?i:<a\\b[^>]*?\\bhref\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>\"']+))[^>]*>([\\s\\S]*?)</a\\s*>)")
+         (matches (find-all-matches pattern html)))
     (map (lambda (m)
-           (let* ((url-pos (cadr m))
-                  (text-pos (caddr m))
-                  (url (substring html (car url-pos) (cdr url-pos)))
-                  (text (substring html (car text-pos) (cdr text-pos)))
-                  (cleaned-text (string-trim (unescape-html-entities (pregexp-replace* "<[^>]*>" text " ")))))
+           (let* ((u1 (and (cadr m) (substring html (car (cadr m)) (cdr (cadr m)))))
+                  (u2 (and (caddr m) (substring html (car (caddr m)) (cdr (caddr m)))))
+                  (u3 (and (cadddr m) (substring html (car (cadddr m)) (cdr (cadddr m)))))
+                  (raw-url (or u1 u2 u3 ""))
+                  (text-pos (list-ref m 4))
+                  (raw-text (if text-pos (substring html (car text-pos) (cdr text-pos)) ""))
+                  (url (if base-uri (resolve-url base-uri raw-url) raw-url))
+                  (cleaned-text (string-trim (unescape-html-entities (pregexp-replace* "<[^>]*>" raw-text " ")))))
              (list url cleaned-text)))
-         all-matches)))
+         matches)))
 
-;; API 4: Get h1, h2, and h3 section headers (returns list of (level text) lists)
-(def (get-headers uri)
-  (let* ((html (fetch-html uri))
-         (pattern "<[hH]([123])[^>]*>([\\s\\S]*?)</[hH]\\1>")
+;; Extract h1, h2, h3 section headers in document order
+(def (html->headers html)
+  (let* ((pattern "(?i:<h([123])[^>]*>([\\s\\S]*?)</h\\1\\s*>)")
          (matches (find-all-matches pattern html)))
     (map (lambda (m)
            (let* ((level-pos (cadr m))
@@ -150,3 +178,17 @@
                   (cleaned-text (string-trim (unescape-html-entities (pregexp-replace* "<[^>]*>" text " ")))))
              (list level cleaned-text)))
          matches)))
+
+;;; ---- High-level API (fetches then parses) ----------------------------------
+
+(def (get-plain-text uri)
+  (html->text (fetch-html uri)))
+
+(def (get-markdown uri)
+  (html->markdown (fetch-html uri)))
+
+(def (get-links uri)
+  (html->links (fetch-html uri) uri))
+
+(def (get-headers uri)
+  (html->headers (fetch-html uri)))

@@ -1,7 +1,8 @@
 ;; File: kmeans-lib.ss
 ;; K-means clustering library
 (import :std/format
-        :gerbil/gambit)
+        :gerbil/gambit
+        "../shared/format")
 
 (export euclidean-distance
         squared-distance
@@ -12,38 +13,19 @@
         initialize-centroids-plusplus
         kmeans-fit
         kmeans-predict
+        kmeans-model
+        kmeans-model?
+        kmeans-model-centroids
+        kmeans-model-labels
+        kmeans-model-inertia
+        kmeans-model-iterations
+        kmeans-model-k
+        kmeans-model-num-features
         centroids-of
         labels-of
         inertia-of
         iterations-of
         format-decimal)
-
-;; Find index of character in string (helper for format-decimal)
-(def (string-index str char)
-  (let ((len (string-length str)))
-    (let loop ((i 0))
-      (cond
-        ((= i len) #f)
-        ((char=? (string-ref str i) char) i)
-        (else (loop (+ i 1)))))))
-
-;; Format floating point numbers to a fixed number of decimal places
-(def (format-decimal x places)
-  (let* ((multiplier (expt 10 places))
-         (rounded (/ (round (* x multiplier)) multiplier))
-         (str (number->string (exact->inexact rounded))))
-    (let ((dot-pos (string-index str #\.)))
-      (let ((formatted-str
-             (if dot-pos
-               (let* ((frac-len (- (string-length str) dot-pos 1))
-                      (diff (- places frac-len)))
-                 (if (> diff 0)
-                   (string-append str (make-string diff #\0))
-                   (substring str 0 (+ dot-pos places 1))))
-               (string-append str "." (make-string places #\0)))))
-        (if (char=? (string-ref formatted-str 0) #\.)
-          (string-append "0" formatted-str)
-          formatted-str)))))
 
 ;; Squared Euclidean distance between two feature vectors
 (def (squared-distance a b)
@@ -141,19 +123,21 @@
 ;; Uniform random selection of k distinct starting points.
 (def (initialize-centroids-random points k)
   (let* ((point-vec (list->vector points))
-         (n (vector-length point-vec))
-         (chosen (make-vector k #f))
-         (picked-count 0)
-         (used (make-hash-table)))
-    (let loop ()
-      (when (< picked-count k)
-        (let ((idx (random-integer n)))
-          (unless (hash-get used idx)
-            (hash-put! used idx #t)
-            (vector-set! chosen picked-count (vector-copy (vector-ref point-vec idx)))
-            (set! picked-count (+ picked-count 1))))
-        (loop)))
-    chosen))
+         (n (vector-length point-vec)))
+    (when (> k n)
+      (error "initialize-centroids-random: k cannot exceed number of points" k n))
+    (let ((chosen (make-vector k #f))
+          (picked-count 0)
+          (used (make-hash-table)))
+      (let loop ()
+        (when (< picked-count k)
+          (let ((idx (random-integer n)))
+            (unless (hash-get used idx)
+              (hash-put! used idx #t)
+              (vector-set! chosen picked-count (vector-copy (vector-ref point-vec idx)))
+              (set! picked-count (+ picked-count 1))))
+          (loop)))
+      chosen)))
 
 ;; K-means++ initialization: pick the first centroid uniformly, then each
 ;; subsequent centroid with probability proportional to its squared distance
@@ -212,7 +196,13 @@
             (set! done #t))
           (set! centroids new-centroids))
         (loop)))
-    (list centroids labels (compute-inertia points labels centroids) iter)))
+    ;; Reassign labels once for final centroids so labels and inertia are strictly consistent:
+    (let ((final-labels (assign-clusters points centroids)))
+      (list centroids final-labels (compute-inertia points final-labels centroids) iter))))
+
+(defstruct kmeans-model
+  (centroids labels inertia iterations k num-features)
+  transparent: #t)
 
 ;; Fit a k-means model.
 ;;   points        : list of feature vectors (all same length)
@@ -221,7 +211,7 @@
 ;;   tol:          : convergence tolerance on centroid movement (default 1e-6)
 ;;   n-init:       : number of random restarts; best-inertia run wins (default 10)
 ;;   init:         : 'kmeans++ (default) or 'random
-;; Returns a hash table with keys: centroids, labels, inertia, iterations, k, num-features.
+;; Returns a kmeans-model struct.
 (def (kmeans-fit points k
                  max-iters: (max-iters 100)
                  tol: (tol 1.0e-6)
@@ -229,6 +219,10 @@
                  init: (init 'kmeans++))
   (when (null? points)
     (error "kmeans-fit: empty point list"))
+  (when (<= k 0)
+    (error "kmeans-fit: k must be positive" k))
+  (when (> k (length points))
+    (error "kmeans-fit: k cannot exceed number of points" k (length points)))
   (let* ((num-features (vector-length (car points)))
          (best-inertia 1.0e30)
          (best-centroids #f)
@@ -250,21 +244,18 @@
           (set! best-centroids cents)
           (set! best-labels labs)
           (set! best-iters its))))
-    (let ((model (make-hash-table)))
-      (hash-put! model 'centroids best-centroids)
-      (hash-put! model 'labels best-labels)
-      (hash-put! model 'inertia best-inertia)
-      (hash-put! model 'iterations best-iters)
-      (hash-put! model 'k k)
-      (hash-put! model 'num-features num-features)
-      model)))
+    (make-kmeans-model best-centroids best-labels best-inertia best-iters k num-features)))
 
 ;; Predict the cluster label for a single point vector.
 (def (kmeans-predict model x)
-  (nearest-centroid-index x (hash-ref model 'centroids)))
+  (nearest-centroid-index x (centroids-of model)))
 
-;; Convenience accessors
-(def (centroids-of model)  (hash-ref model 'centroids))
-(def (labels-of model)     (hash-ref model 'labels))
-(def (inertia-of model)    (hash-ref model 'inertia))
-(def (iterations-of model) (hash-ref model 'iterations))
+;; Convenience accessors (work with kmeans-model struct or hash table)
+(def (centroids-of model)
+  (if (kmeans-model? model) (kmeans-model-centroids model) (hash-ref model 'centroids)))
+(def (labels-of model)
+  (if (kmeans-model? model) (kmeans-model-labels model) (hash-ref model 'labels)))
+(def (inertia-of model)
+  (if (kmeans-model? model) (kmeans-model-inertia model) (hash-ref model 'inertia)))
+(def (iterations-of model)
+  (if (kmeans-model? model) (kmeans-model-iterations model) (hash-ref model 'iterations)))

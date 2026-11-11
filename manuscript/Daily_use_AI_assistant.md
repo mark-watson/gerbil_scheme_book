@@ -102,8 +102,20 @@ Here is the full `cache.ss` module:
 ;;; Provides add, lookup (bag-of-words matching), count, clear, and
 ;;; clear-older-than-one-week operations.
 
-(import :std/sugar :std/error)
-(export #t)
+(import :std/sugar
+        :std/error
+        :std/sort
+        :std/srfi/1)
+
+(export make-cache
+        load-cache-entries
+        save-cache-entries
+        cache-add
+        cache-count
+        cache-lookup
+        cache-clear
+        cache-clear-older-one-week
+        cache-close)
 
 (def (make-cache path)
   (let* ((entries (load-cache-entries path))
@@ -143,15 +155,38 @@ Here is the full `cache.ss` module:
 (def (cache-count cache)
   (length (hash-ref cache 'entries)))
 
+(def (string-contains-ci? haystack needle)
+  (let ((hl (string-length haystack))
+        (nl (string-length needle)))
+    (let lp ((i 0))
+      (if (> (+ i nl) hl)
+        #f
+        (if (string-ci=? (substring haystack i (+ i nl)) needle)
+          #t
+          (lp (+ i 1)))))))
+
+(def (count-matching-keywords text keywords)
+  (let loop ((kws keywords) (cnt 0))
+    (if (null? kws)
+      cnt
+      (loop (cdr kws)
+            (if (string-contains-ci? text (car kws))
+              (+ cnt 1)
+              cnt)))))
+
 (def (cache-lookup cache keywords (limit 10))
   (let* ((entries (hash-ref cache 'entries))
-         (matching
-           (filter (lambda (entry)
-                     (any (lambda (kw)
-                            (string-contains-ci? (cdr entry) kw))
-                          keywords))
-                   entries)))
-    (map cdr (take matching limit))))
+         (scored
+          (filter-map (lambda (entry)
+                        (let ((score (count-matching-keywords (cdr entry) keywords)))
+                          (if (> score 0)
+                            (cons score (cdr entry))
+                            #f)))
+                      entries))
+         (sorted
+          (sort scored (lambda (a b) (> (car a) (car b))))))
+    (map cdr (take (if (< (length sorted) limit) sorted (take sorted limit))
+                   (min limit (length sorted))))))
 
 (def (cache-clear cache)
   (hash-put! cache 'entries '())
@@ -168,27 +203,6 @@ Here is the full `cache.ss` module:
 
 (def (cache-close cache)
   (save-cache-entries cache))
-
-(def (take lst n)
-  (let lp ((lst lst) (n n) (acc '()))
-    (if (or (null? lst) (<= n 0))
-      (reverse acc)
-      (lp (cdr lst) (- n 1) (cons (car lst) acc)))))
-
-(def (any pred lst)
-  (and (pair? lst)
-       (or (pred (car lst))
-           (any pred (cdr lst)))))
-
-(def (string-contains-ci? haystack needle)
-  (let ((hl (string-length haystack))
-        (nl (string-length needle)))
-    (let lp ((i 0))
-      (if (> (+ i nl) hl)
-        #f
-        (if (string-ci=? (substring haystack i (+ i nl)) needle)
-          #t
-          (lp (+ i 1)))))))
 ```
 
 ### Walking Through the Cache Module
@@ -201,7 +215,7 @@ Here is the full `cache.ss` module:
 
 **`cache-add`** captures the current time with `(time->seconds (current-time))` that is a Gambit runtime call that returns the number of seconds since the Unix epoch as an integer. It appends the new entry to the list and immediately persists.
 
-**`cache-lookup`** is where the RAG retrieval happens. It filters all entries to those containing any of the query keywords (case-insensitively), then returns up to `limit` matching texts. The `any` helper short-circuits: as soon as one keyword matches, the entry is included.
+**`cache-lookup`** is where the retrieval happens. It scores all entries by counting how many query keywords match (case-insensitively), sorts by score descending, and returns up to `limit` matching texts. This ranks the most relevant past answers first.
 
 **`string-contains-ci?`** implements a simple sliding-window substring search with `string-ci=?` for case-insensitive comparison. There is no external string library needed.
 
@@ -593,7 +607,7 @@ gemini> h
 gemini> !what sci-fi movies are playing today in Flagstaff AZ?
   [Searching...]
 
-For today, Sunday, July 9, 2026, the following science fiction movies
+For today, Thursday, July 9, 2026, the following science fiction movies
 are playing in Flagstaff, AZ:
 
 *   **Dune: Messiah** (PG-13) is showing at the **Harkins Flagstaff 16**
@@ -682,7 +696,7 @@ The tool as presented is immediately useful and intentionally minimal. The next 
 
 ---
 
-## Practice Problems
+## Optional Practice Problems
 
 These exercises extend the concepts from this chapter. Each problem is designed to be completed in Gerbil Scheme, building on the `cache.ss` and `main.ss` modules.
 

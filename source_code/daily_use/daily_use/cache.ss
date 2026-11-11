@@ -4,11 +4,23 @@
 ;;; Stores entries as s-expression pairs in a file, one per line:
 ;;;   (timestamp . "answer text")
 ;;;
-;;; Provides add, lookup (bag-of-words matching), count, clear, and
+;;; Provides add, lookup (keyword-ranked matching), count, clear, and
 ;;; clear-older-than-one-week operations.
 
-(import :std/sugar :std/error)
-(export #t)
+(import :std/sugar
+        :std/error
+        :std/sort
+        :std/srfi/1)
+
+(export make-cache
+        load-cache-entries
+        save-cache-entries
+        cache-add
+        cache-count
+        cache-lookup
+        cache-clear
+        cache-clear-older-one-week
+        cache-close)
 
 (def (make-cache path)
   (let* ((entries (load-cache-entries path))
@@ -48,15 +60,38 @@
 (def (cache-count cache)
   (length (hash-ref cache 'entries)))
 
+(def (string-contains-ci? haystack needle)
+  (let ((hl (string-length haystack))
+        (nl (string-length needle)))
+    (let lp ((i 0))
+      (if (> (+ i nl) hl)
+        #f
+        (if (string-ci=? (substring haystack i (+ i nl)) needle)
+          #t
+          (lp (+ i 1)))))))
+
+(def (count-matching-keywords text keywords)
+  (let loop ((kws keywords) (cnt 0))
+    (if (null? kws)
+      cnt
+      (loop (cdr kws)
+            (if (string-contains-ci? text (car kws))
+              (+ cnt 1)
+              cnt)))))
+
 (def (cache-lookup cache keywords (limit 10))
   (let* ((entries (hash-ref cache 'entries))
-         (matching
-           (filter (lambda (entry)
-                     (any (lambda (kw)
-                            (string-contains-ci? (cdr entry) kw))
-                          keywords))
-                   entries)))
-    (map cdr (take matching limit))))
+         (scored
+          (filter-map (lambda (entry)
+                        (let ((score (count-matching-keywords (cdr entry) keywords)))
+                          (if (> score 0)
+                            (cons score (cdr entry))
+                            #f)))
+                      entries))
+         (sorted
+          (sort scored (lambda (a b) (> (car a) (car b))))))
+    (map cdr (take (if (< (length sorted) limit) sorted (take sorted limit))
+                   (min limit (length sorted))))))
 
 (def (cache-clear cache)
   (hash-put! cache 'entries '())
@@ -73,24 +108,3 @@
 
 (def (cache-close cache)
   (save-cache-entries cache))
-
-(def (take lst n)
-  (let lp ((lst lst) (n n) (acc '()))
-    (if (or (null? lst) (<= n 0))
-      (reverse acc)
-      (lp (cdr lst) (- n 1) (cons (car lst) acc)))))
-
-(def (any pred lst)
-  (and (pair? lst)
-       (or (pred (car lst))
-           (any pred (cdr lst)))))
-
-(def (string-contains-ci? haystack needle)
-  (let ((hl (string-length haystack))
-        (nl (string-length needle)))
-    (let lp ((i 0))
-      (if (> (+ i nl) hl)
-        #f
-        (if (string-ci=? (substring haystack i (+ i nl)) needle)
-          #t
-          (lp (+ i 1)))))))

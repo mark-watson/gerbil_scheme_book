@@ -46,7 +46,7 @@
 		     (if (not (noise-word? (vector-ref words (+ 2 n))))
 			 (begin
 			   (table-set! 3-grams 3-s (+ 1 (table-ref 3-grams 3-s 0)))
-			   (if (noise-word? (vector-ref words (+ 3 n)))
+			   (if (not (noise-word? (vector-ref words (+ 3 n))))
 			       (table-set! 4-grams 4-s (+ 1 (table-ref 4-grams 4-s 0)))))))))))
     (table-for-each ; 2-grams:
      (lambda (k v) (if (> v 1) (set! key-phrase-list (cons k key-phrase-list))))
@@ -81,6 +81,6 @@
 	(set! category-seq (cons (list-ref ss i) category-seq))))
     
     (set! category-seq (reverse category-seq))
-    (list words tags key-phrase-list (list (car category-seq) (cadr category-seq)) summary-words proper-name-list place-list)))
+    (list words tags key-phrase-list category-seq summary-words proper-name-list place-list)))
 
 ;;(process-file "data/testdata/climate_g8.txt")

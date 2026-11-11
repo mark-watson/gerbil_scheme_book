@@ -32,18 +32,21 @@ The project directory **gerbil_scheme_book/source_code/NLP** contains hand writt
 
 The **Makefile** provides a standard set of targets for common development tasks. A key feature of this setup is the use of a project-local build environment. All Gerbil build artifacts, compiled modules, and package dependencies are installed into a .gerbil directory within the project root, rather than the user's global ~/.gerbil directory.
 
-This is achieved by temporarily setting the HOME environment variable to the current directory for all Gerbil compiler (gxc) and interpreter (gxi) commands:
+This is achieved by setting the `GERBIL_PATH` environment variable to a project-local directory for all Gerbil compiler (`gxc`) and interpreter (`gxi`) commands:
 
-    HOME=$(CURDIR) gxi ...
+    GERBIL_PATH := $(CURDIR)/.gerbil
+    export GERBIL_PATH
 
 This approach ensures that the project is self-contained and builds are reproducible, without interfering with your global Gerbil installation.
 
 ```makefile
+GERBIL_PATH := $(CURDIR)/.gerbil
+export GERBIL_PATH
+
 all: build
 
 build:
-	# Redirect HOME so gxpkg installs into project-local .gerbil
-	HOME=$(CURDIR) gxi build.ss
+	gxi build.ss
 
 .PHONY: test test-fast
 
@@ -51,29 +54,22 @@ test: compile-mods
 	@echo "Running smoke test (gxi) on climate_g8.txt..."
 	@mkdir -p .gerbil
 	@rm -rf .gerbil/test-output.json
-	@HOME=$(CURDIR) gxi nlp.ss -- -i data/testdata/climate_g8.txt -o .gerbil/test-output.json
+	gxi nlp.ss -- -i data/testdata/climate_g8.txt -o .gerbil/test-output.json
 	@echo "Wrote .gerbil/test-output.json"
 	@/bin/echo -n "Preview: " && head -c 300 .gerbil/test-output.json || true
 
-# Interpreter-based run; useful if static exe build is problematic
-test-fast: compile-mods
-	@echo "Running interpreter smoke test (gxi) on climate_g8.txt..."
-	@mkdir -p .gerbil
-	@HOME=$(CURDIR) gxi nlp.ss -- -i data/testdata/climate_g8.txt -o .gerbil/test-output.json
-	@echo "Wrote .gerbil/test-output.json"
-	@/bin/echo -n "Preview: " && head -c 300 .gerbil/test-output.json || true
-
+test-fast: test
 
 clean:
 	@echo "Cleaning project build artifacts..."
 	@rm -rf .gerbil
-	@rm -f kbtm nlp a.out
+	@rm -f nlp a.out
 	@find . -maxdepth 1 -type f \( -name "*.o*" -o -name "*.ssxi" -o -name "*.ssi" \) -delete
+
 .PHONY: compile-mods
 compile-mods:
 	@echo "Compiling modules with gxc into project-local .gerbil..."
-	@HOME=$(CURDIR) gxc utils.ss fasttag.ss category.ss proper-names.ss \
-	  data/stop-words.ss generated-code/lexdata.ss generated-code/cat-data-tables.ss \
+	gxc utils.ss fasttag.ss category.ss proper-names.ss \
 	  main.ss nlp.ss
 ```
 
@@ -103,7 +99,7 @@ This is a utility target that pre-compiles all core Scheme source files (.ss) in
 This program serves as the main command-line interface for our NLP text analysis library. Its primary responsibility is to orchestrate the text processing workflow by parsing command-line arguments, invoking the core analysis engine, and serializing the results into a structured JSON format. The utility is designed to read the path to a source text file and a destination output file from the user. After processing the input file with the process-file function from the underlying library, it constructs a JSON object containing extracted data such as significant words, tags, key phrases, and scored categories. To accomplish this without external dependencies, the program includes a minimal, custom-built set of functions for escaping special characters and writing JSON-compliant strings and arrays, demonstrating fundamental principles of data serialization, file I/O, and application entry point logic in a functional programming context.
 
 ```scheme
-(import :kbtm/main)
+(import :nlp/main :gerbil/gambit)
 
 (export main)
 
@@ -225,15 +221,13 @@ The following architecture diagram illustrates the structure of the NLP project,
 {width: "80%"}
 ![Architecture diagram for the NLP project](nlp_architecture.png)
 
-## Test Run:
+## Test Run
 
-On some systems, you might run into link compatibility probelems. I did on macOS when I brew installed Gerbil Scheme and later brew updated openssl to a newer version.
+Run the smoke test to verify the NLP pipeline:
 
-As a result of this configuration problem, the **make test** target runs an interpretter target, bypassing any potential link problems.
-
-```
-make test
-cat .gerbil/test-output.json | jq
+```bash
+$ make test
+$ cat .gerbil/test-output.json | jq
 ```
 
 ## Building and Running the Command Line Tool

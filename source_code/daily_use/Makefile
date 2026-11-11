@@ -7,6 +7,9 @@ endif
 
 default: build
 
+test:
+	gxi test-cache.ss
+
 build:
 	$(GXP) deps -i
 	$(GXP) build
@@ -16,7 +19,7 @@ build-release:
 	$(GXP) build --release
 
 install:
-	mv .gerbil/bin/daily-use /usr/local/bin/daily-use
+	install -m 755 .gerbil/bin/daily-use /usr/local/bin/daily-use
 
 clean:
 	gerbil clean

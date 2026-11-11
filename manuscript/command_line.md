@@ -36,7 +36,7 @@ $ rm test-tool
 $
 ```
 
-This program (file **test-mytool.ss**) demonstrates how to construct a complete, albeit simple, command-line utility in Gerbil Scheme. It leverages the powerful **:std/cli/getopt** library to handle argument parsing, a common requirement for such tools. The script is designed to accept two specific command-line options: a mandatory **--name** option that requires a string value, and an optional boolean flag, **--verbose** (or its short form **-v**), which toggles additional output. The program's logic includes robust argument validation, printing a usage message and exiting if the required name is not provided. Upon successful execution, it greets the user by name, optionally printing a "verbose on" message if the corresponding flag was set, showcasing a standard pattern for creating interactive and user-friendly command-line applications.
+This program (file **test-tool.ss**) demonstrates how to construct a complete, albeit simple, command-line utility in Gerbil Scheme. It leverages the powerful **:std/cli/getopt** library to handle argument parsing, a common requirement for such tools. The script is designed to accept two specific command-line options: a mandatory **--name** option that requires a string value, and an optional boolean flag, **--verbose** (or its short form **-v**), which toggles additional output. The program's logic includes robust argument validation, printing a usage message and exiting if the required name is not provided. Upon successful execution, it greets the user by name, optionally printing a "verbose on" message if the corresponding flag was set, showcasing a standard pattern for creating interactive and user-friendly command-line applications.
 
 The example file **test-tool.ss**:
 
@@ -47,7 +47,7 @@ The example file **test-tool.ss**:
 (import :std/format) ;; for 'format'
 
 (def (usage)
-  (print-exit 2 "usage: mytool [-v] --name=STR [ARGS...]"))
+  (print-exit 2 "usage: test-tool [-v] --name STR [ARGS...]"))
 
 (def (main . argv)
   (let* ((parser (getopt (flag 'verbose "-v" "--verbose")
@@ -57,7 +57,7 @@ The example file **test-tool.ss**:
          (verbose (hash-get opts 'verbose)))
     (unless name (usage))
     (when verbose (display "verbose on\n"))
-    (displayln (format "Hello, ~a\n" name))
+    (displayln (format "Hello, ~a" name))
     0))
 ```
 
@@ -78,22 +78,22 @@ The following architecture diagrams show the structure of the example projects c
 
 ## A More Flexible Structure for Command Line Utilities
 
-This next listing of a Bash shell interaction demonstrates a ccommand-line utility project written in Gerbil Scheme. The terminal session walks through the entire lifecycle of the project, starting with an inspection of the directory structure. You'll see the standard Gerbil project files: a **gerbil.pkg** file to declare the package, a **build.ss** script that defines how to compile the source code, and a **Makefile** for convenience. The source code (to be listed ater) is split into a **main.ss** entrypoint and a **lib.ss** library module. The session continues by showing the compilation process using make, which invokes Gerbil's package manager, **gxpkg**. Finally, we execute the compiled program, testing its command-line argument parsing and its ability to perform a simple action, in this case printing the current working directory, similar to the Unix pwd command. This example serves as a practical template for structuring, building, and running standalone applications with Gerbil.
+This next listing of a Bash shell interaction demonstrates a command-line utility project written in Gerbil Scheme. The terminal session walks through the entire lifecycle of the project, starting with an inspection of the directory structure. You'll see the standard Gerbil project files: a **gerbil.pkg** file to declare the package, a **build.ss** script that defines how to compile the source code, and a **Makefile** for convenience. The source code is split into a **main.ss** entrypoint and a **lib.ss** library module. The session continues by showing the compilation process using make, which invokes Gerbil's package manager, **gxpkg**. Finally, we execute the compiled program, testing its command-line argument parsing and its ability to perform a simple action, in this case printing the current working directory, similar to the Unix pwd command. This example serves as a practical template for structuring, building, and running standalone applications with Gerbil.
 
 
 ```console
 $ pwd
 /Users/markw/GITHUB/gerbil_scheme_book/source_code/command_line_utilities
-Marks-Mac-mini:command_line_utilities $ ls
-build.ss		gerbil.pkg		manifest.ss
+$ ls
+build.ss		gerbil.pkg
 command_line_utilities	Makefile		README.md
-Marks-Mac-mini:command_line_utilities $ ls -l command_line_utilities 
+$ ls -l command_line_utilities 
 total 16
 -rw-r--r--  1 markw  staff   313 Aug 31 12:28 lib.ss
 -rw-r--r--  1 markw  staff  1426 Aug 31 12:31 main.ss
-Marks-Mac-mini:command_line_utilities $ cat gerbil.pkg 
+$ cat gerbil.pkg 
 (package: markw)
-Marks-Mac-mini:command_line_utilities $ cat build.ss 
+$ cat build.ss 
 #!/usr/bin/env gxi
 ;;; -*- Gerbil -*-
 (import :std/build-script)
@@ -101,14 +101,14 @@ Marks-Mac-mini:command_line_utilities $ cat build.ss
 (defbuild-script
   '("command_line_utilities/lib"
     (exe: "command_line_utilities/main" bin: "command_line_utilities")))
-Marks-Mac-mini:command_line_utilities $ make
+$ make
 /opt/homebrew/bin/gxpkg deps -i
 /opt/homebrew/bin/gxpkg build
 ... build in current directory
-Marks-Mac-mini:command_line_utilities $ .gerbil/bin/command_line_utilities --help
+$ .gerbil/bin/command_line_utilities --help
 Unknown argument: --help
 usage: command_line_utilities [pwd|ls] [--file PATH]
-Marks-Mac-mini:command_line_utilities $ .gerbil/bin/command_line_utilities pwd
+$ .gerbil/bin/command_line_utilities pwd
 /Users/markw/GITHUB/gerbil_scheme_book/source_code/command_line_utilities/
 ```
 
@@ -116,16 +116,16 @@ The project's structure and build process are quintessential Gerbil. The gerbil.
 
 ## Wrap Up for Writing Command Line Utilities in Gerbil Scheme and Notes On User Built Libraries
 
-The material here serves as a tutorial for getting started. This book is a work in progress: the next two chapters (currently being written) are additional command line application examples.
+The material here serves as a tutorial for getting started with command-line applications in Gerbil Scheme.
 
 ### Notes On User Installed Libraries
 
-As you work through the examples in this book, you might ask yourself where compiled files and libraries you create are stored. Take a look in the **/.gerbil/lib** directory on your laptop or server. The **~/.gerbil/lib** directory is the default location for user installed Gerbil Scheme libraries and modules. When you use Gerbil's package manager **gxi -d** or compile your own modules, the compiled artifacts are placed here so the Gerbil runtime and compiler can find them:
+As you work through the examples in this book, you might ask yourself where compiled files and libraries you create are stored. Take a look in the **~/.gerbil/lib** directory on your laptop or server. The **~/.gerbil/lib** directory is the default location for user installed Gerbil Scheme libraries and modules. When you use Gerbil's package manager **gxpkg** or compile your own modules, the compiled artifacts are placed here so the Gerbil runtime and compiler can find them:
 
 ```console
 $ pwd
 /Users/markw/.gerbil/lib
-Marks-Mac-mini:lib $ ls
+$ ls
 dbpedia		ffi.o4		ffi~0.o13	ffi~0.o9	stop-words~0.o1
 ffi.o1		ffi.o5		ffi~0.o14	gemini		test.o1
 ffi.o10		ffi.o6		ffi~0.o15	groq		test.o2
@@ -143,14 +143,14 @@ ollama.o2	ollama.o5	ollama.ssi	ollama~0.o3	ollama~0.o6
 ollama.o3	ollama.o6	ollama~0.o1	ollama~0.o4	ollama~0.o7
 ```
 
-The compiled **stop-words** files were created running the examples in the previous NLP chapter. **ollama**, **openai**, etc. were created in the chapters covering Large Language Models (LLMS), etc.
+The compiled **stop-words** files were created running the examples in the previous NLP chapter. **ollama**, **openai**, etc. were created in the chapters covering Large Language Models (LLMs), etc.
 
 Gerbil maintains a search path for modules. ~/.gerbil/lib is a standard entry in this path, allowing you to (import ...) your own or third-party code without specifying a full path.
 
 Gerbil Scheme is an ahead-of-time (AOT) compiled language that uses Gambit-C as a backend. When you compile a module, it produces several files:
 
-- Object Files (.o*): These are the compiled object code for your Scheme files. The number suffix (e.g., .o1, .o2) often relates to compilation passes or optimization levels. The files with a tilde (~) are typically temporary or backup files from the compilation process.
-- Module Metadata (.ssi): This "Scheme Source Information" file contains metadata about the compiled module, including its dependencies, exported symbols, and macros. This file is essential for the (import) system to work correctly.
+- Object Files (.o*): These are the compiled object code for your Scheme files. The number suffix (e.g., .o1, .o2) represents the Gambit object-file version which increments across recompilations. The files with a tilde (~0) correspond to compiled macro expansion and syntax stages of the module.
+- Module Interface (.ssi): This "Scheme Source Interface" file defines the public interface of the module, exporting types, macros, and symbol bindings so other modules can import it at compile time.
 
 ## Optional Practice Problems
 

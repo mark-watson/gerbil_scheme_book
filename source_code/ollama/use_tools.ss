@@ -11,6 +11,7 @@
 
 (import :std/net/request
         :std/text/json
+        :std/srfi/13
         "example_tools")
 
 (export ollama-with-tools
@@ -22,19 +23,26 @@
 
 (def *tool-model* "qwen3:1.7b")   ;; good small model for tool calling
 
+;; Determine base endpoint from OLLAMA_HOST or default to localhost:11434
+(def (ollama-host)
+  (let ((host (or (getenv "OLLAMA_HOST" #f) "http://localhost:11434")))
+    (if (string-prefix? "http" host)
+        host
+        (string-append "http://" host))))
+
 ;;; ----------------------------------------------------------------
 ;;; ollama-chat — single chat request (with optional tools)
 ;;; ----------------------------------------------------------------
 
+;; Send a chat request to Ollama's /api/chat endpoint.
+;; MESSAGES: list of hash tables, each with 'role' and 'content' keys.
+;; TOOLS: optional list of tool schemas (as produced by tool-registry-schemas).
+;; MODEL: model name string.
+;; Returns the parsed JSON response as a hash table.
 (def (ollama-chat messages
                   tools: (tools #f)
                   model: (model *tool-model*))
-  "Send a chat request to Ollama's /api/chat endpoint.
-   MESSAGES: list of hash tables, each with 'role' and 'content' keys.
-   TOOLS: optional list of tool schemas (as produced by tool-registry-schemas).
-   MODEL: model name string.
-   Returns the parsed JSON response as a hash table."
-  (let* ((endpoint "http://localhost:11434/api/chat")
+  (let* ((endpoint (string-append (ollama-host) "/api/chat"))
          (headers '(("Content-Type" . "application/json")))
          (body-data
            (list->hash-table
@@ -44,28 +52,32 @@
                  ("messages" . ,messages))
                (if tools `(("tools" . ,tools)) '()))))
          (body-string (json-object->string body-data)))
-    (let ((response (http-post endpoint headers: headers data: body-string)))
-      (if (= (request-status response) 200)
-          (request-json response)
-          (error "Ollama chat API request failed"
-                 status: (request-status response)
-                 body: (request-text response))))))
+    (with-catch
+      (lambda (e)
+        (error "Could not connect to Ollama. Is the Ollama server running?" irritant: e))
+      (lambda ()
+        (let ((response (http-post endpoint headers: headers data: body-string)))
+          (if (= (request-status response) 200)
+              (request-json response)
+              (error "Ollama chat API request failed"
+                     status: (request-status response)
+                     body: (request-text response))))))))
 
 ;;; ----------------------------------------------------------------
 ;;; Tool dispatch
 ;;; ----------------------------------------------------------------
 
+;; Execute a single tool call using handlers from REGISTRY.
+;; TOOL-CALL is a hash table with 'function' containing 'name' and 'arguments'.
+;; Returns the result string.
 (def (dispatch-tool-call registry tool-call)
-  "Execute a single tool call using handlers from REGISTRY.
-   TOOL-CALL is a hash table with 'function' containing 'name' and 'arguments'.
-   Returns the result string."
   (let* ((func-info (hash-ref tool-call 'function))
          (name (hash-ref func-info 'name))
          (args (hash-ref func-info 'arguments))
          (tool-record (tool-registry-lookup registry name)))
     (displayln "  [tool-call] " name " args: " args)
     (if tool-record
-        (let ((handler (hash-ref tool-record "handler")))
+        (let ((handler (tool-handler tool-record)))
           (handler args))
         (string-append "Unknown tool: " (if (string? name) name "")))))
 
@@ -73,16 +85,15 @@
 ;;; ollama-with-tools — agent loop
 ;;; ----------------------------------------------------------------
 
+;; Send PROMPT to Ollama with tool calling support.
+;; Runs an agent loop: if the model requests tool calls, executes
+;; them and feeds results back until the model returns a final text
+;; answer or MAX-ROUNDS is exhausted.
+;; REGISTRY is a tool registry (from make-tool-registry / default-tool-registry).
+;; Returns the final response text as a string.
 (def (ollama-with-tools prompt registry
                         model: (model *tool-model*)
                         max-rounds: (max-rounds 5))
-  "Send PROMPT to Ollama with tool calling support.
-   Runs an agent loop: if the model requests tool calls, executes
-   them and feeds results back until the model returns a final text
-   answer or MAX-ROUNDS is exhausted.
-
-   REGISTRY is a tool registry (from make-tool-registry / default-tool-registry).
-   Returns the final response text as a string."
   (let* ((tool-schemas (tool-registry-schemas registry))
          (messages
            (list
@@ -91,49 +102,43 @@
                  ("content" . ,prompt))))))
     (let loop ((round 0)
                (msgs messages))
-      (when (>= round max-rounds)
-        (error "Tool-calling loop exceeded max rounds" max-rounds))
+      (if (>= round max-rounds)
+          (begin
+            (displayln "Maximum rounds reached without a final answer.")
+            "[Tool-calling loop reached maximum rounds without completing]")
+          (begin
+            (displayln "\n--- Round " round " ---")
+            (let* ((response (ollama-chat msgs tools: tool-schemas model: model))
+                   (message (hash-ref response 'message))
+                   (content (hash-get message 'content))
+                   (tool-calls (hash-get message 'tool_calls)))
 
-      (displayln "\n--- Round " round " ---")
-      (let* ((response (ollama-chat msgs tools: tool-schemas model: model))
-             (message (hash-ref response 'message))
-             (content (hash-get message 'content))
-             (tool-calls (hash-get message 'tool_calls)))
+              (cond
+                ;; Model requested tool calls — execute them and loop
+                ((and tool-calls (pair? tool-calls))
+                 (displayln "Model requested " (length tool-calls) " tool call(s).")
 
-        (cond
-          ;; Model requested tool calls — execute them and loop
-          ((and tool-calls (pair? tool-calls))
-           (displayln "Model requested " (length tool-calls) " tool call(s).")
+                 ;; Append the assistant's message (with tool_calls) to history
+                 (let ((msgs-with-assistant (append msgs (list message))))
 
-           ;; Append the assistant's message (with tool_calls) to history
-           (let ((msgs-with-assistant (append msgs (list message))))
+                   ;; Execute each tool call and append results
+                   (let tc-loop ((remaining tool-calls)
+                                 (acc msgs-with-assistant))
+                     (if (null? remaining)
+                         (loop (+ round 1) acc)
+                         (let* ((tc (car remaining))
+                                (name (hash-ref (hash-ref tc 'function) 'name))
+                                (result (dispatch-tool-call registry tc)))
+                           (displayln "  [result] " name " => " result)
+                           (tc-loop (cdr remaining)
+                                    (append acc
+                                            (list
+                                             (list->hash-table
+                                              `(("role" . "tool")
+                                                ("tool_name" . ,name)
+                                                ("content" . ,result)))))))))))
 
-             ;; Execute each tool call and append results
-             (let tc-loop ((remaining tool-calls)
-                           (acc msgs-with-assistant))
-               (if (null? remaining)
-                   (loop (+ round 1) acc)
-                   (let* ((tc (car remaining))
-                          (result (dispatch-tool-call registry tc))
-                          (name (hash-ref (hash-ref tc 'function) 'name)))
-                     (displayln "  [result] " name " => " result)
-                     (tc-loop (cdr remaining)
-                              (append acc
-                                      (list
-                                       (list->hash-table
-                                        `(("role" . "tool")
-                                          ("content" . ,result)))))))))))
-
-          ;; No tool calls — return the final text content
-          (else
-           (displayln "Final answer received.")
-           (or content "No response content")))))))
-
-;;; ----------------------------------------------------------------
-;;; Quick test (commented out — paste in REPL to try)
-;;; ----------------------------------------------------------------
-
-;; (import "example_tools" "use_tools")
-;; (ollama-with-tools "Use the get_weather tool: What's the weather like in Paris?" default-tool-registry)
-;;
-;; (ollama-with-tools "Use the calculate tool: What is 42 * 17?" default-tool-registry)
+                ;; No tool calls — return the final text content
+                (else
+                 (displayln "Final answer received.")
+                 (or content "No response content")))))))))

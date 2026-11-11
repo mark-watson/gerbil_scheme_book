@@ -1,30 +1,22 @@
 ;; File: frozen_lake_qlearning.ss
 (import :std/format
-        :std/pregexp
-        :gerbil/gambit)
+        :gerbil/gambit
+        "../shared/format")
 
-;; Find index of character in string (helper for format-decimal)
-(def (string-index str char)
-  (let ((len (string-length str)))
-    (let loop ((i 0))
-      (cond
-        ((= i len) #f)
-        ((char=? (string-ref str i) char) i)
-        (else (loop (+ i 1)))))))
-
-;; Format floating point numbers to a fixed number of decimal places
-(def (format-decimal x places)
-  (let* ((multiplier (expt 10 places))
-         (rounded (/ (round (* x multiplier)) multiplier))
-         (str (number->string rounded)))
-    (let ((dot-pos (string-index str #\.)))
-      (if dot-pos
-        (let* ((frac-len (- (string-length str) dot-pos 1))
-               (diff (- places frac-len)))
-          (if (> diff 0)
-            (string-append str (make-string diff #\0))
-            str))
-        (string-append str "." (make-string places #\0))))))
+(export make-frozen-lake
+        frozen-lake-reset!
+        frozen-lake-step!
+        frozen-lake-env
+        frozen-lake-env?
+        step-result
+        step-result?
+        step-result-next-state
+        step-result-reward
+        step-result-done
+        make-q-table
+        q-learning
+        evaluate
+        main)
 
 ;; Pad string left
 (def (pad-left str len char)
@@ -34,24 +26,26 @@
       str)))
 
 ;; Environment Setup
+(defstruct frozen-lake-env
+  (state slippery grid n-states n-actions)
+  transparent: #t)
+
+(defstruct step-result
+  (next-state reward done)
+  transparent: #t)
+
 (def (make-frozen-lake (slippery #t))
-  (let ((state 0)
-        (grid '#("S" "F" "F" "F" "F" "H" "F" "H" "F" "F" "F" "H" "H" "F" "F" "G")))
-    (list->hash-table
-      `((state . ,state)
-        (slippery . ,slippery)
-        (grid . ,grid)
-        (n-states . 16)
-        (n-actions . 4)))))
+  (let ((grid '#("S" "F" "F" "F" "F" "H" "F" "H" "F" "F" "F" "H" "H" "F" "F" "G")))
+    (make-frozen-lake-env 0 slippery grid 16 4)))
 
 (def (frozen-lake-reset! env)
-  (hash-put! env 'state 0)
+  (set! (frozen-lake-env-state env) 0)
   0)
 
 (def (frozen-lake-step! env action)
-  (let* ((state (hash-ref env 'state))
-         (slippery (hash-ref env 'slippery))
-         (grid (hash-ref env 'grid))
+  (let* ((state (frozen-lake-env-state env))
+         (slippery (frozen-lake-env-slippery env))
+         (grid (frozen-lake-env-grid env))
          ;; If slippery, there's a 2/3 chance of slipping to an orthogonal direction
          (a (if (and slippery (< (random-real) 0.667))
                 (modulo (+ action (if (< (random-real) 0.5) -1 1) 4) 4)
@@ -69,10 +63,8 @@
          (cell (vector-ref grid next-state))
          (reward (if (equal? cell "G") 1.0 0.0))
          (done (or (equal? cell "H") (equal? cell "G"))))
-    (hash-put! env 'state next-state)
-    `((next-state . ,next-state)
-      (reward . ,reward)
-      (done . ,done))))
+    (set! (frozen-lake-env-state env) next-state)
+    (make-step-result next-state reward done)))
 
 ;; Q-Table Setup and Helpers
 (def (make-q-table states actions)
@@ -107,9 +99,9 @@
       (let loop ((s 0) (steps 0))
         (let* ((a (argmax (vector-ref Q s)))
                (step-res (frozen-lake-step! env a))
-               (next-state (cdr (assoc 'next-state step-res)))
-               (reward (cdr (assoc 'reward step-res)))
-               (done (cdr (assoc 'done step-res))))
+               (next-state (step-result-next-state step-res))
+               (reward (step-result-reward step-res))
+               (done (step-result-done step-res)))
           (cond
             ((and done (= reward 1.0))
              (set! wins (+ wins 1)))
@@ -118,19 +110,21 @@
 
 ;; Q-learning Agent
 (def (q-learning env (episodes 10000) (alpha 0.1) (gamma 0.99) (eps 1.0) (decay 0.999) (min-eps 0.01))
-  (let ((Q (make-q-table 16 4))
-        (current-eps eps))
+  (let* ((n-states (frozen-lake-env-n-states env))
+         (n-actions (frozen-lake-env-n-actions env))
+         (Q (make-q-table n-states n-actions))
+         (current-eps eps))
     (do ((ep 0 (+ ep 1)))
         ((= ep episodes) Q)
       (let ((s (frozen-lake-reset! env)))
         (let loop ((s s) (steps 0))
           (let* ((a (if (< (random-real) current-eps)
-                      (random-integer 4)
+                      (random-integer n-actions)
                       (argmax (vector-ref Q s))))
                  (step-res (frozen-lake-step! env a))
-                 (next-state (cdr (assoc 'next-state step-res)))
-                 (reward (cdr (assoc 'reward step-res)))
-                 (done (cdr (assoc 'done step-res)))
+                 (next-state (step-result-next-state step-res))
+                 (reward (step-result-reward step-res))
+                 (done (step-result-done step-res))
                  (s-q (vector-ref Q s))
                  (old-val (vector-ref s-q a))
                  (next-max (vector-max (vector-ref Q next-state)))
@@ -147,7 +141,7 @@
 (def (main)
   (let ((env (make-frozen-lake #t)))
     (displayln "=== Q-Learning on FrozenLake ===")
-    (displayln (format "States: ~a, Actions: ~a" (hash-ref env 'n-states) (hash-ref env 'n-actions)))
+    (displayln (format "States: ~a, Actions: ~a" (frozen-lake-env-n-states env) (frozen-lake-env-n-actions env)))
     (displayln "")
     (displayln "Training:")
     (let* ((Q (q-learning env))
@@ -169,4 +163,4 @@
       (displayln (format "Final success rate (1000 episodes): ~a"
                          (format-decimal (evaluate env Q 1000) 2))))))
 
-(main)
+(export main)

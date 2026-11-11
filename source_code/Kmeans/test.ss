@@ -113,4 +113,4 @@
 
     (displayln "\n=== Demo complete ===")))
 
-(main)
+(export main)

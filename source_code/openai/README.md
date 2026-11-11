@@ -38,7 +38,7 @@ gxi
 
 ```scheme
 (openai "Translate 'hello world' to French."
-        model: "gpt-4o-mini"
+        model: "gpt-5-mini"
         system-prompt: "You are a professional translator.")
 ```
 
@@ -46,7 +46,7 @@ gxi
 
 ```scheme
 (openai prompt
-        model: "gpt-4o-mini"                           ; optional
+        model: "gpt-5-mini"                            ; optional
         system-prompt: "You are a helpful assistant.") ; optional
 ```
 

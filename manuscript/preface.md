@@ -4,7 +4,7 @@ I have used Lisp languages since the late 1970s, Common Lisp and Clojure profess
 
 ## New Material Added in Latest Edition
 
-This edition adds five new chapters covering practical AI and programming topics: **Anomaly Detection**, **K-means** machine learning,  **Chess Game** (implementing a chess engine), **Daily Use AI Assistant** (building a personal AI assistant for everyday tasks), **Reinforcement Learning**, and **Web Scraping**. These chapters extend the book's focus on applying Gerbil Scheme to real-world problems and modern AI use cases as well as having fun writing a Chess playing program.
+This edition adds eleven new chapters covering practical AI, machine learning, symbolic computation, and systems programming: **Anomaly Detection**, **K-means** machine learning, **Chess Game** (implementing a chess engine), **Daily Use AI Assistant** (building a personal AI assistant for everyday tasks), **Reinforcement Learning**, **Web Scraping**, **Autocontext** (hybrid BM25 and TF-IDF retrieval), **Symbolic Mathematics** (differentiation and integration), **Probability and Statistics** (Bayesian and frequentist reasoning), **Interactive Fiction with Local LLMs** (building a text adventure game), **microGPT** (autoregressive language modeling from scratch), and **Coding Harness** (interactive multi-file code assistant). These chapters extend the book's focus on applying Gerbil Scheme to real-world problems and modern AI use cases.
 
 Both the source code examples and the manuscript files for this book are maintained in a single GitHub repository: [https://github.com/mark-watson/gerbil_scheme_book](https://github.com/mark-watson/gerbil_scheme_book). I recommend that you keep a local copy:
 
@@ -46,12 +46,12 @@ make
 make install
 ```
 
-You will need to change the prefix to suit your systerm and then put the installed **gerbil/bin** on your *PATH*.
+You will need to change the prefix to suit your system and then put the installed **gerbil/bin** on your *PATH*.
 
 
 ## History and Background to the Gerbil Scheme Project
 
-I recommend that you keep a local the GitHub repository for Gerbil Scheme:
+I recommend that you keep a local copy of the GitHub repository for Gerbil Scheme:
 
 {linenos=off}
 ```
@@ -109,7 +109,7 @@ The foundation for all network communication in Gerbil is the **:std/net/request
 - Secure Communication: Integrated SSL/TLS context management for HTTPS requests, using the system's certificate authorities for verification by default. 
 - Introspective Response Objects: Requests return a request object that provides access to the status code, headers, and response body in various formats (raw bytes, text, or parsed JSON).
 
-This library is the sole tool required to interact with any RESTful API, from the complex and we will in later chapters use it to access commercial services offered by OpenAI and Google Gemini as well as locally hosted Large Language Models (LLMs) using Ollama.
+This library is the sole tool required to interact with any RESTful API, ranging from simple endpoints to complex services. In later chapters we will use it to access commercial services offered by OpenAI and Google Gemini as well as locally hosted Large Language Models (LLMs) using Ollama.
 
 For handling the responses from web services we will use the Data Interchange Layer package **:std/text/json**.
 

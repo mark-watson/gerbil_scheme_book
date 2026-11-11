@@ -20,9 +20,21 @@ else
   endif
 endif
 
+export GERBIL_PATH := $(CURDIR)/.gerbil
+
 build:
+	@mkdir -p .gerbil
 	gxc -cc-options "$(CC_OPTS)" -ld-options "$(LD_OPTS)" ffi.ss
 	gxc -cc-options "$(CC_OPTS)" -ld-options "$(LD_OPTS)" -exe -o test test.ss
 
+test:
+	@if [ -d "/opt/homebrew/include/raptor2" ] || pkg-config --exists raptor2 2>/dev/null; then \
+		$(MAKE) build && ./test; \
+	else \
+		echo "raptor2 not installed; skipping RaptorRDF_FFI test"; \
+	fi
+
+run: test
+
 clean:
-	rm -f *.c *.scm *.o *.so test
+	rm -rf *.c *.scm *.o *.so test .gerbil

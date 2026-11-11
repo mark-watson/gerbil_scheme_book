@@ -58,25 +58,37 @@ The module imports the standard networking, JSON, URI, formatting, and regex lib
 ```scheme
 ;; File: webscrape.ss
 (import :std/net/request
-        :std/text/json
-        :std/net/uri
         :std/format
-        :std/pregexp)
+        :std/pregexp
+        :std/srfi/13)
 
 (export get-plain-text
         get-markdown
         get-links
-        get-headers)
+        get-headers
+        html->text
+        html->markdown
+        html->links
+        html->headers
+        unescape-html-entities
+        resolve-url)
 ```
 
-### Fetching HTML
+### Fetching HTML and Responsible Scraping
 
-Every scraping procedure begins by fetching the raw HTML for a URL. The `fetch-html` helper wraps Gerbil's `http-get` and sets a browser like `User-Agent` header. Many sites reject requests that come in with the default Gerbil user agent, so identifying as a recent Chrome build gets us cleanly past most heuristic filters:
+Every scraping procedure begins by fetching the raw HTML for a URL. When scraping, responsible web citizenship is paramount: identify your bot honestly with a clear `User-Agent` contact header, check `robots.txt` before harvesting content, respect site terms of service, and rate-limit your requests so you do not overburden servers.
+
+The `fetch-html` helper wraps Gerbil's `http-get` and defaults to an honest `User-Agent` identifying our client:
 
 ```scheme
+;; Default User-Agent: identify our tool honestly per web standards
+(def default-user-agent
+  (or (getenv "WEBSCRAPE_USER_AGENT" #f)
+      "GerbilWebScraper/1.0 (+https://github.com/mark-watson/gerbil_scheme_book; contact@markwatson.com)"))
+
 ;; Fetch raw HTML text from a URI
-(def (fetch-html uri)
-  (let* ((headers `(("User-Agent" . "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+(def (fetch-html uri (user-agent default-user-agent))
+  (let* ((headers `(("User-Agent" . ,user-agent)
                     ("Accept" . "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")))
          (response (http-get uri headers: headers)))
     (if (= (request-status response) 200)
@@ -106,18 +118,40 @@ The helper returns matches in document order, each match represented as a list o
 
 ### Unescaping HTML Entities
 
-HTML text is peppered with named and numeric character references such as `&amp;`, `&nbsp;`, and `&#39;`. Once we have stripped the tags, we still need to translate these back into their plain characters. `unescape-html-entities` handles the small handful that appear most often on real pages:
+HTML text is peppered with named and numeric character references such as `&amp;`, `&nbsp;`, `&#39;`, and numeric references like `&#8217;` or `&#x27;`. Once tags are stripped, we must decode them. Crucially, `&amp;` must be decoded **last**; if `&amp;` were decoded before `&lt;`, an escaped sequence like `&amp;lt;` would mistakenly become `<`.
 
 ```scheme
-;; Unescape standard HTML entities
+(def (replace-numeric-entities str hex?)
+  (let ((pat (if hex? "&#x([0-9a-fA-F]+);" "&#(\\d+);"))
+        (base (if hex? 16 10)))
+    (let loop ((s str))
+      (let ((m (pregexp-match-positions pat s)))
+        (if (not m)
+            s
+            (let* ((full (car m))
+                   (grp (cadr m))
+                   (digits (substring s (car grp) (cdr grp)))
+                   (n (string->number digits base))
+                   (ch-str (if (and n (< n 65536))
+                               (string (integer->char n))
+                               ""))
+                   (prefix (substring s 0 (car full)))
+                   (suffix (substring s (cdr full) (string-length s))))
+              (loop (string-append prefix ch-str suffix))))))))
+
+;; Unescape standard and numeric HTML entities.
+;; &amp; is decoded LAST so entities like &amp;lt; decode to &lt;, not <.
 (def (unescape-html-entities str)
   (let* ((s (pregexp-replace* "&nbsp;" str " "))
-         (s (pregexp-replace* "&amp;" s "&"))
          (s (pregexp-replace* "&lt;" s "<"))
          (s (pregexp-replace* "&gt;" s ">"))
          (s (pregexp-replace* "&quot;" s "\""))
          (s (pregexp-replace* "&#39;" s "'"))
-         (s (pregexp-replace* "&apos;" s "'")))
+         (s (pregexp-replace* "&apos;" s "'"))
+         (s (replace-numeric-entities s #f))
+         (s (replace-numeric-entities s #t))
+         ;; &amp; decoded last
+         (s (pregexp-replace* "&amp;" s "&")))
     s))
 ```
 

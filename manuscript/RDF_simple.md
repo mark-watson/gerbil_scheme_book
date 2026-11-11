@@ -89,17 +89,12 @@ non-variable.  It then scans to the opening `{` of the `WHERE` block and
 reads groups of three tokens as triple patterns, discarding optional trailing
 `.` separators and stopping at the closing `}`.
 
-The parser deliberately treats every token as a plain string after lowercasing
-— resources, literals, and variables are all strings.  This avoids the need
-for a separate IR type hierarchy and keeps the code focused on the structural
-logic rather than on data representation.
-
-One subtlety worth noting: the parser lowercases all tokens before processing.
-This means variable names like `?Friend` and `?friend` are treated as
-identical inside the engine, and resource strings like `<ex:Alice>` become
-`<ex:alice>` in the parsed patterns.  For a toy engine this is an acceptable
-simplification; a production system would need to distinguish case-sensitive
-IRIs from case-insensitive keywords.
+The parser treats tokens as plain strings — resources, literals, and variables
+are all strings, while SPARQL keywords (`SELECT`, `WHERE`) are matched
+case-insensitively. The tokenizer preserves `<...>` IRIs (such as
+`<http://example.org/Alice>`) and `"..."` string literals atomically without
+splitting on internal punctuation or spaces. This avoids the need for a
+separate IR type hierarchy and keeps the code focused on structural logic.
 
 
 The following architecture diagram illustrates the structure of the in-memory RDF store, showing the data flow from triple storage through SPARQL query tokenization, parsing, pattern matching, and result projection.
@@ -159,9 +154,10 @@ match conditions — a join.  Because each pattern can bind new variables, the
 common variables between two patterns act as join keys automatically, without
 any explicit join condition.
 
-The algorithm is correct for any number of patterns, though its time
-complexity is proportional to the product of the number of triples and the
-number of patterns.  For a small in-memory store that is entirely acceptable.
+The algorithm is correct for any number of patterns. In the worst case,
+its time complexity is $O(T^P)$ where $T$ is the number of triples and $P$
+is the number of patterns, though selective patterns prune intermediate
+environments early. For a small in-memory store that is entirely acceptable.
 
 ### Projecting Results
 
@@ -181,19 +177,15 @@ returned as-is, which contains all variables that were bound during matching.
 ;;;
 ;;; Supports:
 ;;;   make-store        – create an empty triple store
-;;;   add-triple        – add an (s p o) triple
-;;;   remove-triple     – remove a matching (s p o) triple
+;;;   add-triple        – add an (s p o) triple (set-like, no duplicates)
+;;;   remove-triple     – remove the first matching (s p o) triple
 ;;;   store-triples     – retrieve all triples from a store
 ;;;   sparql-select     – run a SELECT query (variables + WHERE patterns)
 ;;;   print-all-triples – display all triples for debugging
-;;;
-;;; SPARQL subset handled:
-;;;   SELECT ?var1 ?var2 ... WHERE { s p o . s p o . }
-;;;   SELECT * WHERE { ... }
-;;;   Variables begin with '?'
 
 (export make-store add-triple remove-triple store-triples
-        sparql-select print-all-triples)
+        sparql-select print-all-triples main)
+(import :std/srfi/13 :gerbil/gambit)
 
 ;;;; ──────────────────────────────────────────────────────────────────
 ;;;;  1.  Data model
@@ -207,22 +199,27 @@ returned as-is, which contains all variables that were bound during matching.
 (define (store-triples st) (cdr st))
 
 (define (add-triple st s p o)
-  "Add the triple (s p o) to store ST; returns ST for chaining."
-  (set-cdr! st (cons (list s p o) (cdr st)))
-  st)
+  ;; Add the triple (s p o) to store ST if not already present; returns ST for chaining.
+  (let ((triple (list s p o)))
+    (unless (member triple (cdr st))
+      (set-cdr! st (cons triple (cdr st))))
+    st))
 
 (define (remove-triple st s p o)
-  "Remove the first triple matching (s p o) from store ST."
-  (set-cdr! st
-            (filter (lambda (t)
-                      (not (and (equal? (car t)   s)
-                                (equal? (cadr t)  p)
-                                (equal? (caddr t) o))))
-                    (cdr st)))
-  st)
+  ;; Remove the first triple matching (s p o) from store ST.
+  (let loop ((prev st) (curr (cdr st)))
+    (cond
+     ((null? curr) st)
+     ((and (equal? (caar curr) s)
+           (equal? (cadar curr) p)
+           (equal? (caddar curr) o))
+      (set-cdr! prev (cdr curr))
+      st)
+     (else
+      (loop curr (cdr curr))))))
 
 (define (print-all-triples st)
-  "Display every triple in the store."
+  ;; Display every triple in the store.
   (display "All triples:\n")
   (for-each (lambda (t)
               (display "  ")
@@ -236,14 +233,8 @@ returned as-is, which contains all variables that were bound during matching.
 ;;;;  2.  Tokenizer
 ;;;; ──────────────────────────────────────────────────────────────────
 
-(define (char-whitespace? ch)
-  (or (char=? ch #\space)
-      (char=? ch #\tab)
-      (char=? ch #\newline)
-      (char=? ch #\return)))
-
 (define (tokenize str)
-  "Split STR into a list of tokens; {}, .,; each become their own token."
+  ;; Split STR into SPARQL tokens, preserving <IRI> and "literal" strings atomically.
   (let ((tokens '())
         (buf    '()))
 
@@ -259,30 +250,52 @@ returned as-is, which contains all variables that were bound during matching.
             (reverse tokens))
           (let ((ch (car chars)))
             (cond
+             ((char=? ch #\<)
+              (emit!)
+              (let read-iri ((cs (cdr chars)) (acc (list #\<)))
+                (cond
+                 ((null? cs)
+                  (set! tokens (cons (list->string (reverse acc)) tokens))
+                  (loop '()))
+                 ((char=? (car cs) #\>)
+                  (set! tokens (cons (list->string (reverse (cons #\> acc))) tokens))
+                  (loop (cdr cs)))
+                 (else
+                  (read-iri (cdr cs) (cons (car cs) acc))))))
+             ((char=? ch #\")
+              (emit!)
+              (let read-str ((cs (cdr chars)) (acc (list #\")))
+                (cond
+                 ((null? cs)
+                  (set! tokens (cons (list->string (reverse acc)) tokens))
+                  (loop '()))
+                 ((and (char=? (car cs) #\\) (pair? (cdr cs)))
+                  (read-str (cddr cs) (cons (cadr cs) (cons #\\ acc))))
+                 ((char=? (car cs) #\")
+                  (set! tokens (cons (list->string (reverse (cons #\" acc))) tokens))
+                  (loop (cdr cs)))
+                 (else
+                  (read-str (cdr cs) (cons (car cs) acc))))))
              ((member ch '(#\( #\) #\{ #\} #\. #\, #\;))
               (emit!)
-              (set! tokens (cons (string ch) tokens)))
+              (set! tokens (cons (string ch) tokens))
+              (loop (cdr chars)))
              ((char-whitespace? ch)
-              (emit!))
+              (emit!)
+              (loop (cdr chars)))
              (else
-              (set! buf (cons ch buf))))
-            (loop (cdr chars)))))))
+              (set! buf (cons ch buf))
+              (loop (cdr chars)))))))))
 
 ;;;; ──────────────────────────────────────────────────────────────────
 ;;;;  3.  SPARQL parser
 ;;;; ──────────────────────────────────────────────────────────────────
 
 (define (var? tok)
-  "True if TOK is a SPARQL variable (starts with '?')."
+  ;; True if TOK is a SPARQL variable (starts with '?').
   (and (string? tok)
        (> (string-length tok) 0)
        (char=? (string-ref tok 0) #\?)))
-
-(define (string-ci=? a b)
-  (string=? (string-downcase a) (string-downcase b)))
-
-(define (string-downcase s)
-  (list->string (map char-downcase (string->list s))))
 
 ;; Drop leading tokens until test passes, return remaining list.
 (define (drop-until pred lst)
@@ -292,15 +305,14 @@ returned as-is, which contains all variables that were bound during matching.
    (else                (drop-until pred (cdr lst)))))
 
 (define (parse-sparql query)
-  "Parse a minimal SELECT … WHERE { … } query.
-   Returns two values: (vars patterns).
-   vars     – list of variable name strings (or '(\"*\") for SELECT *)
-   patterns – list of (s p o) patterns"
-
-  (let* ((toks    (map string-downcase (tokenize query)))
+  ;; Parse a minimal SELECT … WHERE { … } query.
+  ;; Returns two values: (vars patterns).
+  ;; vars     – list of variable name strings (or '("*") for SELECT *)
+  ;; patterns – list of (s p o) patterns
+  (let* ((toks (tokenize query))
          ;; advance to SELECT keyword
          (after-select
-          (let ((rest (drop-until (lambda (t) (string=? t "select")) toks)))
+          (let ((rest (drop-until (lambda (t) (string-ci=? t "select")) toks)))
             (if (null? rest) '() (cdr rest)))))
 
     ;; collect SELECT variables (or * wildcard)
@@ -345,12 +357,12 @@ returned as-is, which contains all variables that were bound during matching.
 ;; An environment (binding set) is an association list: ((var . val) ...)
 
 (define (env-lookup var env)
-  "Return the value bound to VAR in ENV, or #f."
+  ;; Return the value bound to VAR in ENV, or #f.
   (let ((pair (assoc var env)))
     (and pair (cdr pair))))
 
 (define (env-extend var val env)
-  "Return a new env with VAR=VAL added, or #f on conflict."
+  ;; Return a new env with VAR=VAL added, or #f on conflict.
   (let ((existing (assoc var env)))
     (cond
      (existing
@@ -359,8 +371,8 @@ returned as-is, which contains all variables that were bound during matching.
       (cons (cons var val) env)))))
 
 (define (match-pattern pattern triple env)
-  "Try to unify one PATTERN with one TRIPLE given ENV.
-   Returns extended env on success, #f on failure."
+  ;; Try to unify one PATTERN with one TRIPLE given ENV.
+  ;; Returns extended env on success, #f on failure.
   (let ((ps (car pattern))   (pp (cadr pattern))   (po (caddr pattern))
         (ts (car triple))    (tp (cadr triple))     (to (caddr triple)))
     (let* ((e1 (if (var? ps)
@@ -377,8 +389,8 @@ returned as-is, which contains all variables that were bound during matching.
       e3)))
 
 (define (join-patterns patterns triples envs)
-  "For each pattern in PATTERNS, extend every env in ENVS by matching
-   against all TRIPLES.  Returns the list of surviving envs."
+  ;; For each pattern in PATTERNS, extend every env in ENVS by matching
+  ;; against all TRIPLES. Returns the list of surviving envs.
   (if (null? patterns)
       envs
       (let* ((pat  (car patterns))
@@ -395,19 +407,19 @@ returned as-is, which contains all variables that were bound during matching.
         (join-patterns rest triples new-envs))))
 
 (define (project-env vars env)
-  "Pick out only the selected VARS from ENV.
-   Returns an alist ((var . val) ...)."
+  ;; Pick out only the selected VARS from ENV.
+  ;; Returns an alist ((var . val) ...).
   (map (lambda (v) (cons v (env-lookup v env))) vars))
 
 (define (sparql-select st query)
-  "Run a SELECT query against store ST.
-   Returns a list of alists, each mapping variable names to values.
-   With SELECT *, returns the full binding environment as an alist."
+  ;; Run a SELECT query against store ST.
+  ;; Returns a list of alists, each mapping variable names to values.
+  ;; With SELECT *, returns the full binding environment as an alist.
   (let-values (((vars patterns) (parse-sparql query)))
     (let* ((triples   (store-triples st))
            (solutions (join-patterns patterns triples (list '())))
            (select-*? (and (= (length vars) 1)
-                          (string=? (car vars) "*"))))
+                           (string=? (car vars) "*"))))
       (map (lambda (env)
              (if select-*?
                  env                          ;; full binding set
@@ -419,7 +431,7 @@ returned as-is, which contains all variables that were bound during matching.
 ;;;; ──────────────────────────────────────────────────────────────────
 
 (define (display-results results)
-  "Pretty-print a list of query result alists."
+  ;; Pretty-print a list of query result alists.
   (if (null? results)
       (display "  (no results)\n")
       (for-each (lambda (row)
@@ -442,54 +454,55 @@ returned as-is, which contains all variables that were bound during matching.
 ;;;;  6.  Demo
 ;;;; ──────────────────────────────────────────────────────────────────
 
-(let ((st (make-store)))
+(define (main . args)
+  (let ((st (make-store)))
 
-  ;; Load some data
-  (add-triple st "<ex:alice>" "<foaf:name>"  "\"Alice\"")
-  (add-triple st "<ex:alice>" "<foaf:knows>" "<ex:bob>")
-  (add-triple st "<ex:alice>" "<foaf:age>"   "30")
-  (add-triple st "<ex:bob>"   "<foaf:name>"  "\"Bob\"")
-  (add-triple st "<ex:bob>"   "<foaf:age>"   "25")
-  (add-triple st "<ex:carol>" "<foaf:name>"  "\"Carol\"")
-  (add-triple st "<ex:carol>" "<foaf:age>"   "35")
+    ;; Load some data with real IRIs and mixed-case literals
+    (add-triple st "<http://example.org/Alice>" "<foaf:name>"  "\"Alice Smith\"")
+    (add-triple st "<http://example.org/Alice>" "<foaf:knows>" "<http://example.org/Bob>")
+    (add-triple st "<http://example.org/Alice>" "<foaf:age>"   "30")
+    (add-triple st "<http://example.org/Bob>"   "<foaf:name>"  "\"Bob Jones\"")
+    (add-triple st "<http://example.org/Bob>"   "<foaf:age>"   "25")
+    (add-triple st "<http://example.org/Carol>" "<foaf:name>"  "\"Carol White\"")
+    (add-triple st "<http://example.org/Carol>" "<foaf:age>"   "35")
 
-  (print-all-triples st)
+    (print-all-triples st)
 
-  ;; Who does Alice know, and what is their name?
-  (run-query st
-    "Who does Alice know?"
-    "SELECT ?friendName WHERE {
-       <ex:alice> <foaf:knows> ?friend .
-       ?friend    <foaf:name>  ?friendName .
-     }")
+    ;; Who does Alice know, and what is their name?
+    (run-query st
+      "Who does Alice know?"
+      "SELECT ?friendName WHERE {
+         <http://example.org/Alice> <foaf:knows> ?friend .
+         ?friend                    <foaf:name>  ?friendName .
+       }")
 
-  ;; All subjects and their names
-  (run-query st
-    "All names"
-    "SELECT ?s ?name WHERE {
-       ?s <foaf:name> ?name .
-     }")
+    ;; All subjects and their names
+    (run-query st
+      "All names"
+      "SELECT ?s ?name WHERE {
+         ?s <foaf:name> ?name .
+       }")
 
-  ;; All subjects and their ages
-  (run-query st
-    "All ages"
-    "SELECT ?person ?age WHERE {
-       ?person <foaf:age> ?age .
-     }")
+    ;; All subjects and their ages
+    (run-query st
+      "All ages"
+      "SELECT ?person ?age WHERE {
+         ?person <foaf:age> ?age .
+       }")
 
-  ;; SELECT * – return every binding
-  (run-query st
-    "SELECT * (all triples)"
-    "SELECT * WHERE { ?s ?p ?o . }")
+    ;; SELECT * – return every binding
+    (run-query st
+      "SELECT * (all triples)"
+      "SELECT * WHERE { ?s ?p ?o . }")
 
-  ;; Remove a triple and verify
-  (display "After removing <ex:bob> <foaf:age> 25:\n")
-  (remove-triple st "<ex:bob>" "<foaf:age>" "25")
-  (run-query st
-    "All ages after removal"
-    "SELECT ?person ?age WHERE {
-       ?person <foaf:age> ?age .
-     }"))
+    ;; Remove a triple and verify
+    (display "After removing <http://example.org/Bob> <foaf:age> 25:\n")
+    (remove-triple st "<http://example.org/Bob>" "<foaf:age>" "25")
+    (run-query st
+      "All ages after removal"
+      "SELECT ?person ?age WHERE {
+         ?person <foaf:age> ?age .
+       }")))
 ```
 
 
@@ -508,10 +521,12 @@ compiled artefacts.
 
 ### The Demo at the Bottom of RDF.ss
 
-The bottom of **RDF.ss** contains a self-contained demo wrapped in a `let`
-block so it runs automatically when the file is interpreted.  It builds a
-small social graph with three people (Alice, Bob, and Carol), each with a
-name and an age triple, plus a `foaf:knows` link from Alice to Bob.
+The bottom of **RDF.ss** defines a `main` function executed automatically
+when the file is interpreted with `gxi`. Defining `main` rather than running
+at top level ensures that importing `:rdf-datastore/RDF` as a library does
+not run the demo side-effects. The demo builds a small social graph with three
+people (Alice, Bob, and Carol) using real IRIs and mixed-case literals, each
+with name and age triples, plus a `foaf:knows` link from Alice to Bob.
 
 Five queries exercise the main features of the engine:
 
@@ -531,40 +546,40 @@ Here is sample program output:
 $ make
 gxi RDF.ss
 All triples:
-  <ex:carol> <foaf:age> 35
-  <ex:carol> <foaf:name> "Carol"
-  <ex:bob> <foaf:age> 25
-  <ex:bob> <foaf:name> "Bob"
-  <ex:alice> <foaf:age> 30
-  <ex:alice> <foaf:knows> <ex:bob>
-  <ex:alice> <foaf:name> "Alice"
+  <http://example.org/Carol> <foaf:age> 35
+  <http://example.org/Carol> <foaf:name> "Carol White"
+  <http://example.org/Bob> <foaf:age> 25
+  <http://example.org/Bob> <foaf:name> "Bob Jones"
+  <http://example.org/Alice> <foaf:age> 30
+  <http://example.org/Alice> <foaf:knows> <http://example.org/Bob>
+  <http://example.org/Alice> <foaf:name> "Alice Smith"
 
 Query: Who does Alice know?
-  ?friendname: "Bob"  
+  ?friendName: "Bob Jones"  
 
 Query: All names
-  ?s: <ex:carol>  ?name: "Carol"  
-  ?s: <ex:bob>  ?name: "Bob"  
-  ?s: <ex:alice>  ?name: "Alice"  
+  ?s: <http://example.org/Carol>  ?name: "Carol White"  
+  ?s: <http://example.org/Bob>  ?name: "Bob Jones"  
+  ?s: <http://example.org/Alice>  ?name: "Alice Smith"  
 
 Query: All ages
-  ?person: <ex:carol>  ?age: 35  
-  ?person: <ex:bob>  ?age: 25  
-  ?person: <ex:alice>  ?age: 30  
+  ?person: <http://example.org/Carol>  ?age: 35  
+  ?person: <http://example.org/Bob>  ?age: 25  
+  ?person: <http://example.org/Alice>  ?age: 30  
 
 Query: SELECT * (all triples)
-  ?o: 35  ?p: <foaf:age>  ?s: <ex:carol>  
-  ?o: "Carol"  ?p: <foaf:name>  ?s: <ex:carol>  
-  ?o: 25  ?p: <foaf:age>  ?s: <ex:bob>  
-  ?o: "Bob"  ?p: <foaf:name>  ?s: <ex:bob>  
-  ?o: 30  ?p: <foaf:age>  ?s: <ex:alice>  
-  ?o: <ex:bob>  ?p: <foaf:knows>  ?s: <ex:alice>  
-  ?o: "Alice"  ?p: <foaf:name>  ?s: <ex:alice>
+  ?o: 35  ?p: <foaf:age>  ?s: <http://example.org/Carol>  
+  ?o: "Carol White"  ?p: <foaf:name>  ?s: <http://example.org/Carol>  
+  ?o: 25  ?p: <foaf:age>  ?s: <http://example.org/Bob>  
+  ?o: "Bob Jones"  ?p: <foaf:name>  ?s: <http://example.org/Bob>  
+  ?o: 30  ?p: <foaf:age>  ?s: <http://example.org/Alice>  
+  ?o: <http://example.org/Bob>  ?p: <foaf:knows>  ?s: <http://example.org/Alice>  
+  ?o: "Alice Smith"  ?p: <foaf:name>  ?s: <http://example.org/Alice>  
 
-After removing <ex:bob> <foaf:age> 25:
+After removing <http://example.org/Bob> <foaf:age> 25:
 Query: All ages after removal
-  ?person: <ex:carol>  ?age: 35
-  ?person: <ex:alice>  ?age: 30
+  ?person: <http://example.org/Carol>  ?age: 35  
+  ?person: <http://example.org/Alice>  ?age: 30  
 ```
 
 

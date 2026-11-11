@@ -64,22 +64,23 @@
                       ("x-goog-api-key" . ,api-key)
                       ("Api-Revision" . "2026-05-20")))
            (body-string (json-object->string body-data))
-           (endpoint (string-append
-                      "https://generativelanguage.googleapis.com/v1beta/interactions?key="
-                      api-key))
+           (endpoint "https://generativelanguage.googleapis.com/v1beta/interactions")
            (response (http-post endpoint headers: headers data: body-string)))
       (if (= (request-status response) 200)
         (let* ((response-json (request-json response))
-               (steps (hash-ref response-json 'steps))
+               (steps (hash-ref response-json 'steps #f))
                (model-step
-                 (let lp ((ss (reverse steps)))
-                   (cond
-                     ((null? ss) #f)
-                     ((equal? (hash-ref (car ss) 'type) "model_output") (car ss))
-                     (else (lp (cdr ss))))))
-               (content (hash-ref model-step 'content))
-               (first-content (car content)))
-          (hash-ref first-content 'text))
+                 (and (pair? steps)
+                      (let lp ((ss (reverse steps)))
+                        (cond
+                          ((null? ss) #f)
+                          ((equal? (hash-ref (car ss) 'type #f) "model_output") (car ss))
+                          (else (lp (cdr ss)))))))
+               (content (and model-step (hash-ref model-step 'content #f)))
+               (first-content (and (pair? content) (car content))))
+          (if first-content
+              (hash-ref first-content 'text "")
+              (error "Gemini API: no model_output found in response")))
         (error "Gemini API request failed, status: "
                (request-status response))))))
 
@@ -88,7 +89,9 @@
     (let ((full-prompt (string-append context prompt)))
       (with-catch
         (lambda (e)
-          (string-append "[Error calling Gemini API: " e "]"))
+          (let ((s (open-output-string)))
+            (display-exception e s)
+            (string-append "[Error calling Gemini API: " (get-output-string s) "]")))
         (lambda ()
           (if search-p
             (let* ((search-tool (list->hash-table '(("type" . "google_search"))))
@@ -156,14 +159,6 @@
                (displayln "  [No answer to cache yet]"))
              (lp))
 
-            ((string=? trimmed "!")
-             (let ((before (cache-count *cache*)))
-               (cache-clear-older-one-week *cache*)
-               (let ((after (cache-count *cache*)))
-                 (displayln "  [Cleared " (- before after)
-                            " old entries. " after " items remain]")))
-             (lp))
-
             ((string-prefix? "!" trimmed)
              (let ((query (string-trim (substring trimmed 1
                                                   (string-length trimmed)))))
@@ -228,18 +223,16 @@
         (substring str start end)))))
 
 (def (string-split str)
-  (let* ((chars (string->list str))
-         (words '())
-         (current ""))
-    (for-each (lambda (ch)
-                (if (or (char=? ch #\space)
-                        (char=? ch #\tab))
-                  (begin
-                    (when (> (string-length current) 0)
-                      (set! words (cons current words))
-                      (set! current "")))
-                  (set! current (string-append current (string ch)))))
-              chars)
-    (when (> (string-length current) 0)
-      (set! words (cons current words)))
-    (reverse words)))
+  (let ((len (string-length str)))
+    (let lp ((i 0) (acc '()))
+      (if (>= i len)
+        (reverse acc)
+        (let ((ch (string-ref str i)))
+          (if (or (char=? ch #\space) (char=? ch #\tab))
+            (lp (+ i 1) acc)
+            (let wlp ((j i))
+              (if (or (>= j len)
+                      (char=? (string-ref str j) #\space)
+                      (char=? (string-ref str j) #\tab))
+                (lp j (cons (substring str i j) acc))
+                (wlp (+ j 1))))))))))

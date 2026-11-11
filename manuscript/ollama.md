@@ -8,8 +8,7 @@ Ollama is a powerful and user-friendly tool designed to simplify the process of 
 
 This next program in file **gerbil_scheme_book/source_code/ollama/ollama.ss** provides a practical demonstration of network programming and data handling in Gerbil Scheme by creating a simple client for the Ollama API. Ollama is a fantastic tool that allows you to run powerful large language models, like Llama 3, Mistral, and Gemma, directly on your own machine. Our **ollama** function will encapsulate the entire process of communicating with a locally running Ollama instance. It will take a text prompt as input, construct the necessary JSON payload specifying the model and prompt, send it to the Ollama server's /api/generate endpoint via an HTTP POST request, and then carefully parse the server's JSON response. The goal is to extract and return only the generated text, while also including basic error handling to gracefully manage any non-successful API responses, making for a robust and reusable utility.
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (import :std/net/request :std/text/json)
 (export ollama)
 
@@ -50,7 +49,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 **macOS Installation**
 
-- Download the Ollama application from the official website: [https://ollama.com/download}(https://ollama.com/download).
+- Download the Ollama application from the official website: [https://ollama.com/download](https://ollama.com/download).
 - Unzip the downloaded file.
 - Move the Ollama.app file to your /Applications folder.
 - Run the application. An Ollama icon will appear in the menu bar.
@@ -69,7 +68,7 @@ After this is complete, you can run the local  API service using:
 
 ```bash
 $ ollama serve
-time=2025-08-26T16:05:50.161-07:00 level=INFO source=routes.go:1318 msg="server config" env="map[HTTPS_PROXY: HTTP_PROXY: NO_PROXY: OLLAMA_CONTEXT_LENGTH:4096 OLLAMA_DEBUG:INFO OLLAMA_FLASH_ATTENTION:false OLLAMA_GPU_OVERHEAD:0 OLLAMA_HOST:http://127.0.0.1:11434 OLLAMA_KEEP_ALIVE:5m0s OLLAMA_KV_CACHE_TYPE: OLLAMA_LLM_LIBRARY: OLLAMA_LOAD_TIMEOUT:5m0s OLLAMA_MAX_LOADED_MODELS:0 OLLAMA_MAX_QUEUE:512 OLLAMA_MODELS:/Users/markw/.ollama/models OLLAMA_MULTIUSER_CACHE:false OLLAMA_NEW_ENGINE:false OLLAMA_NEW_ESTIMATES:false OLLAMA_NOHISTORY:false OLLAMA_NOPRUNE:false OLLAMA_NUM_PARALLEL:1 OLLAMA_ORIGINS:[http://localhost https://localhost http://localhost:* https://localhost:* http://127.0.0.1
+time=... level=INFO msg="Listening on 127.0.0.1:11434 (protocol http)"
 ```
 
 ## Example Output
@@ -109,14 +108,13 @@ The following architecture diagram provides an overview of how the Ollama client
 
 Modern LLMs can do more than generate text — they can also decide to call functions. Tool calling (sometimes called function calling) allows a model to inspect a set of tool descriptions you provide, and when appropriate, respond with a structured request to invoke one of those tools rather than producing a plain text answer. Your application then executes the tool, feeds the result back to the model, and the model incorporates that real-world data into its final answer. This creates a powerful agent loop: the model reasons about what information it needs, your code fetches it, and the model synthesizes a response.
 
-Ollama supports tool calling through its **/api/chat** endpoint (the **/api/generate** endpoint used in the previous section does not support tools). We will split the implementation across two files: **example_tools.ss** defines the tool registry and example handlers, while **use_tools.ss** implements the chat client and agent loop.
+Ollama supports tool calling through its native **/api/chat** endpoint (the **/api/generate** endpoint used in the previous section does not support tools; Ollama also provides an OpenAI-compatible `/v1/chat/completions` endpoint). We will split the implementation across two files: **example_tools.ss** defines the tool registry and example handlers, while **use_tools.ss** implements the chat client and agent loop.
 
 ## Defining Tools: example_tools.ss
 
 The file **gerbil_scheme_book/source_code/ollama/example_tools.ss** establishes a small framework for defining tools that an LLM can call. Each tool has four properties: a name (the identifier the model uses), a description (so the model understands when to use it), a JSON-schema-style parameter specification, and a handler — a Gerbil procedure that actually performs the work and returns a string result.
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (import :std/text/json)
 (export make-tool-registry
         register-tool!
@@ -173,8 +171,7 @@ The registry is simply a hash table keyed by tool name. The function **register-
 
 Next we define two example tool handlers and register them into a **default-tool-registry** that is ready to use:
 
-{lang="scheme", linenos=off}
-```
+```scheme
 ;;; Example tool handlers
 
 (def (get-weather-handler args)
@@ -236,7 +233,7 @@ Next we define two example tool handlers and register them into a **default-tool
     reg))
 ```
 
-The **get-weather-handler** is intentionally simple — it always returns "Sunny, 72°F" — since its purpose is to demonstrate the tool-calling protocol rather than integrate with a real weather API. The **calculate-handler** is more interesting: it reads a Scheme expression from the string the model provides, evaluates it with **eval**, and returns the result. The **with-catch** form ensures that malformed expressions produce a friendly error message rather than crashing the program.
+The **get-weather-handler** is intentionally simple — it always returns "Sunny, 72°F" — since its purpose is to demonstrate the tool-calling protocol rather than integrate with a real weather API. The **calculate-handler** is more interesting: rather than calling Scheme's raw `eval` on model-generated strings (which would be unsafe and allow arbitrary code execution), it tokenizes numbers and arithmetic operators, groups parentheses, and safely evaluates arithmetic expressions with standard operator precedence. The **with-catch** form formats any exception and ensures that malformed expressions return an informative error message rather than crashing the program.
 
 Each tool is registered with a JSON-schema describing its parameters. This schema is what the model reads to understand what arguments the tool expects. When you build your own tools, you will follow the same pattern: write a handler function, describe its parameters as a JSON-schema hash table, and call **register-tool!**.
 
@@ -244,8 +241,7 @@ Each tool is registered with a JSON-schema describing its parameters. This schem
 
 The file **gerbil_scheme_book/source_code/ollama/use_tools.ss** builds on the tool registry to implement a complete tool-calling client. It uses Ollama's **/api/chat** endpoint, which supports the OpenAI-compatible chat completions format including a **tools** field. The key difference from our simple **ollama** function is that instead of sending a single prompt and returning the response, we run a loop: send the prompt with tool schemas, check whether the model wants to call a tool, execute the tool if so, feed the result back, and repeat until the model returns a plain text answer.
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (import :std/net/request
         :std/text/json
         "example_tools")
@@ -283,8 +279,7 @@ The file **gerbil_scheme_book/source_code/ollama/use_tools.ss** builds on the to
 
 The **ollama-chat** function is a lower-level building block: it takes a list of message hash tables (each with "role" and "content" keys), an optional list of tool schemas, and a model name. It constructs the JSON payload, sends it to **/api/chat**, and returns the parsed response. Notice how the **tools** field is only included when tool schemas are provided — this means **ollama-chat** can also be used for plain chat completions without tools.
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (def (dispatch-tool-call registry tool-call)
   "Execute a single tool call using handlers from REGISTRY.
    TOOL-CALL is a hash table with 'function' containing 'name'
@@ -302,8 +297,7 @@ The **ollama-chat** function is a lower-level building block: it takes a list of
 
 The **dispatch-tool-call** function bridges the model's structured tool-call response and our registered handlers. When Ollama returns a tool call, the response contains a hash table with a "function" key holding the function name and an "arguments" hash table. We look up the name in our registry, retrieve the handler, and call it with the arguments.
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (def (ollama-with-tools prompt registry
                         model: (model *tool-model*)
                         max-rounds: (max-rounds 5))
@@ -417,8 +411,7 @@ To add a new tool, follow three steps:
 
 1. **Write a handler** — a procedure that takes a hash table of arguments and returns a string:
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (def (my-lookup-handler args)
   (let ((query (or (hash-get args 'query) "")))
     (string-append "Result for: " query)))
@@ -426,8 +419,7 @@ To add a new tool, follow three steps:
 
 2. **Register it** in a registry with a JSON-schema describing its parameters:
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (register-tool! my-registry
   "my_lookup"
   "Look up information about a topic"
@@ -445,8 +437,7 @@ To add a new tool, follow three steps:
 
 3. **Call ollama-with-tools** with your registry:
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (ollama-with-tools "Look up information about Gerbil Scheme"
                    my-registry)
 ```
@@ -456,6 +447,6 @@ The model will read the tool descriptions you provide and decide when to use the
 ## Optional Practice Problems
 
 1. **Conversational History**: Extend `ollama.ss` to use the `/api/chat` endpoint and support maintaining a conversation history list instead of a single static prompt.
-2. **Real-time Utility Tool**: Implement and register a new tool in `use_tools.ss` that retrieves the current system time or evaluates simple mathematical expressions from the command line.
+2. **System Status Tool**: Implement and register a new tool in `example_tools.ss` that retrieves system uptime or available disk space using a system call, returning the status string to the model.
 3. **HTTP Client Timeout**: Add a connection/request timeout configuration to the HTTP client inside `ollama.ss` to prevent the client from hanging if the local Ollama server is overloaded.
 

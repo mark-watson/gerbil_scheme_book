@@ -1,6 +1,6 @@
 ---
 name: gerbil-expert
-description: Gerbil Scheme tutorial, idioms, and API reference for all examples in Mark Watson's Gerbil Scheme book "Artificial Intelligence Algorithms in Gerbil Scheme". Use this skill for writing Gerbil Scheme code that accesses LLMs (Gemini, OpenAI, Ollama, Groq), SPARQL/Wikidata queries, NLP, RDF data stores, FFI bindings, and more.
+description: Gerbil Scheme tutorial, idioms, and API reference for all examples in Mark Watson's Gerbil Scheme book "Gerbil Scheme in Action: AI Applications, Network Programming, and Utilities". Use this skill for writing Gerbil Scheme code that accesses LLMs (Gemini, OpenAI, Ollama, Groq), SPARQL/Wikidata queries, NLP, RDF data stores, FFI bindings, and more.
 ---
 
 # Notes for Using AGENT Skills with Gerbil Scheme Book Examples
@@ -10,7 +10,7 @@ This document helps readers set up coding agent skills so that AI assistants can
 ## Source code for Gemini, OpenAI, Ollama, Groq, SPARQL/Wikidata, NLP, RDF example code
 
 ```bash
-git clone https://github.com/markwatson/gerbil_scheme_book.git
+git clone https://github.com/mark-watson/gerbil_scheme_book.git
 ```
 
 All the Gerbil Scheme examples are in the `source_code/` directory.  Look in ~/GITHUB/gerbil_scheme_book/source_code/ for code to reuse.

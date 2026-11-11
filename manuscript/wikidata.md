@@ -7,30 +7,20 @@ Wikidata is a free, collaborative, and multilingual knowledge base that function
 
 This code in file **wikidata.ss** provides a client for interacting with the Wikidata Query Service, a powerful public SPARQL endpoint for accessing the vast, collaboratively edited knowledge base of Wikidata. The code encapsulates the entire process of querying this service, starting with a raw SPARQL query string. It properly formats the request by URL-encoding the query, constructs the full request URL, and sets the appropriate HTTP headers, including the Accept header for the SPARQL JSON results format and a User-Agent header, which is a requirement for responsible API usage. Upon receiving a response, the module parses the JSON data and then transforms the verbose, nested structure of the standard SPARQL results format into a more convenient and idiomatic Gerbil Scheme data structure—either a list of hash tables or a list of association lists. The file also includes several example functions that demonstrate how to query for specific facts, such as Grace Hopper's birth date, and how to perform more complex, multi-stage queries, like first finding the unique identifiers for entities like Bill Gates and Microsoft and then discovering the relationships that connect them within the knowledge graph.
 
-{lang="scheme", linenos=off}
-```
+```scheme
 ;; File: wikidata.ss
 (import :std/net/request
         :std/text/json
-        :std/net/uri) ; For URL encoding
-(import :std/format)
+        :std/net/uri
+        :std/format)
 
-(export query-wikidata query-wikidata/alist query-dbpedia alist-ref test1 test1-ua test2 test2-ua)
+(export query-wikidata query-wikidata/alist alist-ref test1 test2 default-user-agent)
 
-;; Helper to process the SPARQL JSON results format
-(def (process-sparql-results json-data)
-  (let* ((results (hash-ref json-data 'results))
-         (bindings (hash-ref results 'bindings)))
-    (map (lambda (binding)
-           (let ((result-hash (make-hash-table)))
-             (hash-for-each
-              (lambda (var-name value-obj)
-                (hash-put! result-hash
-                           (if (symbol? var-name) var-name (string->symbol var-name))
-                           (hash-ref value-obj 'value)))
-              binding)
-             result-hash))
-         bindings)))
+;; Default User-Agent following WDQS etiquette policy:
+;; https://meta.wikimedia.org/wiki/User-Agent_policy
+(def default-user-agent
+  (or (getenv "WDQS_UA")
+      "GerbilSchemeBookClient/1.0 (https://github.com/mark-watson/gerbil_scheme_book; contact@markwatson.com)"))
 
 ;; Convenience: look up a key in an alist. Accepts symbol or string keys.
 ;; Usage: (alist-ref 'var row [default])
@@ -39,7 +29,23 @@ This code in file **wikidata.ss** provides a client for interacting with the Wik
          (p (assq sym row)))
     (if p (cdr p) (if (pair? default) (car default) #f))))
 
-;; Same as above but returns an alist per row: ((var . value) ...)
+;; Process SPARQL JSON results into a list of hash tables mapping symbol variable names to values.
+(def (process-sparql-results json-data)
+  (let* ((results (hash-ref json-data 'results))
+         (bindings (hash-ref results 'bindings)))
+    (map (lambda (binding)
+           (let ((result-hash (make-hash-table)))
+             (hash-for-each
+              (lambda (var-name value-obj)
+                (let ((sym (if (symbol? var-name) var-name (string->symbol var-name)))
+                      (val (hash-ref value-obj 'value)))
+                  (hash-put! result-hash sym val)))
+              binding)
+             result-hash))
+         bindings)))
+
+;; Process SPARQL JSON results into a list of alists: ((var . val) ...)
+;; Also preserves datatype and xml:lang attributes when present.
 (def (process-sparql-results-alist json-data)
   (let* ((results (hash-ref json-data 'results))
          (bindings (hash-ref results 'bindings)))
@@ -48,52 +54,56 @@ This code in file **wikidata.ss** provides a client for interacting with the Wik
              (hash-for-each
               (lambda (var-name value-obj)
                 (let* ((sym (if (symbol? var-name) var-name (string->symbol var-name)))
-                       (val (hash-ref value-obj 'value)))
-                  (set! row (cons (cons sym val) row))))
+                       (val (hash-ref value-obj 'value))
+                       (dtype (hash-get value-obj 'datatype))
+                       (lang (hash-get value-obj 'xml:lang)))
+                  (set! row (cons (cons sym val) row))
+                  (when dtype
+                    (set! row (cons (cons (string->symbol (string-append (symbol->string sym) "-datatype")) dtype) row)))
+                  (when lang
+                    (set! row (cons (cons (string->symbol (string-append (symbol->string sym) "-lang")) lang) row)))))
               binding)
              (reverse row)))
          bindings)))
 
 ;; Query the Wikidata Query Service (WDQS)
 ;; - Uses GET with URL-encoded query and JSON format
-;; - Sends a User-Agent per WDQS guidelines; callers can override
-(def (query-wikidata sparql-query . opts)
+;; - Sends a User-Agent per WDQS guidelines; callers can override via user-agent:
+;; - Handles HTTP 429 rate-limiting responses using Retry-After
+(def (query-wikidata sparql-query
+                    user-agent: (user-agent default-user-agent)
+                    as: (as 'hash))
   (let* ((endpoint "https://query.wikidata.org/sparql")
          (encoded-query (uri-encode sparql-query))
          (request-url (string-append endpoint "?query=" encoded-query "&format=json"))
-         (user-agent (if (pair? opts) (car opts) "gerbil-wikidata/0.1 (+https://example.org; contact@example.org)"))
          (headers `(("Accept" . "application/sparql-results+json")
                     ("User-Agent" . ,user-agent))))
-    (let ((response (http-get request-url headers: headers)))
-      (if (= (request-status response) 200)
+    (let loop ((retries 1))
+      (let ((response (http-get request-url headers: headers)))
+        (cond
+         ((= (request-status response) 200)
           (let ((response-json (request-json response)))
-            (process-sparql-results response-json))
+            (if (eq? as 'alist)
+                (process-sparql-results-alist response-json)
+                (process-sparql-results response-json))))
+         ((and (= (request-status response) 429) (> retries 0))
+          (let* ((headers-alist (request-headers response))
+                 (retry-after (or (assoc "retry-after" headers-alist)
+                                  (assoc "Retry-After" headers-alist)))
+                 (wait-secs (if retry-after (string->number (cdr retry-after)) 5)))
+            (thread-sleep! (or wait-secs 5))
+            (loop (- retries 1))))
+         (else
           (error "SPARQL query failed"
                  status: (request-status response)
-                 body: (request-text response))))))
+                 body: (request-text response))))))))
 
 ;; Alist variant returning rows as association lists
-(def (query-wikidata/alist sparql-query . opts)
-  (let* ((endpoint "https://query.wikidata.org/sparql")
-         (encoded-query (uri-encode sparql-query))
-         (request-url (string-append endpoint "?query=" encoded-query "&format=json"))
-         (user-agent (if (pair? opts) (car opts) "gerbil-wikidata/0.1 (+https://example.org; contact@example.org)"))
-         (headers `(("Accept" . "application/sparql-results+json")
-                    ("User-Agent" . ,user-agent))))
-    (let ((response (http-get request-url headers: headers)))
-      (if (= (request-status response) 200)
-          (let ((response-json (request-json response)))
-            (process-sparql-results-alist response-json))
-          (error "SPARQL query failed"
-                 status: (request-status response)
-                 body: (request-text response))))))
+(def (query-wikidata/alist sparql-query (user-agent default-user-agent))
+  (query-wikidata sparql-query user-agent: user-agent as: 'alist))
 
-;; Backward-compatibility alias for previous DBPedia function name
-(def (query-dbpedia . args)
-  (apply query-wikidata args))
-
-;; Example Usage: fetch birth date and birthplace label for Grace Hopper
-(def (test2)
+;; Test2: fetch birth date and birthplace label for Grace Hopper (wd:Q11641)
+(def (test2 (user-agent default-user-agent))
   (let ((query
          (string-append
           "PREFIX wd: <http://www.wikidata.org/entity/>\n"
@@ -101,11 +111,11 @@ This code in file **wikidata.ss** provides a client for interacting with the Wik
           "PREFIX wikibase: <http://wikiba.se/ontology#>\n"
           "PREFIX bd: <http://www.bigdata.com/rdf#>\n"
           "SELECT ?birthDate ?birthPlaceLabel WHERE {\n"
-          "  wd:Q7249 wdt:P569 ?birthDate .\n"
-          "  wd:Q7249 wdt:P19 ?birthPlace .\n"
+          "  wd:Q11641 wdt:P569 ?birthDate .\n"
+          "  wd:Q11641 wdt:P19 ?birthPlace .\n"
           "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". }\n"
           "}")))
-    (let ((results (query-wikidata/alist query)))
+    (let ((results (query-wikidata/alist query user-agent)))
       (for-each
        (lambda (result)
          (display (format "Birth Date: ~a\n" (alist-ref 'birthDate result)))
@@ -113,7 +123,7 @@ This code in file **wikidata.ss** provides a client for interacting with the Wik
        results))))
 
 ;; Test1: find URIs for Bill Gates and Microsoft; then list relationships
-(def (test1)
+(def (test1 (user-agent default-user-agent))
   (let* ((find-uris
           (string-append
            "PREFIX wd: <http://www.wikidata.org/entity/>\n"
@@ -123,10 +133,9 @@ This code in file **wikidata.ss** provides a client for interacting with the Wik
            "  ?bill rdfs:label \"Bill Gates\"@en .\n"
            "  ?bill wdt:P31 wd:Q5 .\n"
            "  ?microsoft rdfs:label \"Microsoft\"@en .\n"
-           ;; Ensure we pick the company entity
            "  ?microsoft wdt:P31/wdt:P279* wd:Q4830453 .\n"
            "} LIMIT 1"))
-         (rows (query-wikidata/alist find-uris)))
+         (rows (query-wikidata/alist find-uris user-agent)))
     (if (null? rows)
         (display "No URIs found for Bill Gates/Microsoft.\n")
         (let* ((row (car rows))
@@ -145,7 +154,7 @@ This code in file **wikidata.ss** provides a client for interacting with the Wik
                  "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". }\n"
                  "}\n"
                  "ORDER BY ?propLabel"))
-               (rels (query-wikidata/alist rel-query)))
+               (rels (query-wikidata/alist rel-query user-agent)))
           (display (format "Bill Gates URI: ~a\n" bill))
           (display (format "Microsoft URI: ~a\n" microsoft))
           (if (null? rels)
@@ -157,80 +166,11 @@ This code in file **wikidata.ss** provides a client for interacting with the Wik
                                   (or (alist-ref 'propLabel r)
                                       (alist-ref 'prop r)))))
                rels))))))
-
-;; Test1 with User-Agent from env var WDQS_UA
-(def (test1-ua)
-  (let* ((ua (or (getenv "WDQS_UA")
-                 "YourApp/1.0 (https://your.site; you@site)"))
-         (find-uris
-          (string-append
-           "PREFIX wd: <http://www.wikidata.org/entity/>\n"
-           "PREFIX wdt: <http://www.wikidata.org/prop/direct/>\n"
-           "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
-           "SELECT ?bill ?microsoft WHERE {\n"
-           "  ?bill rdfs:label \"Bill Gates\"@en .\n"
-           "  ?bill wdt:P31 wd:Q5 .\n"
-           "  ?microsoft rdfs:label \"Microsoft\"@en .\n"
-           "  ?microsoft wdt:P31/wdt:P279* wd:Q4830453 .\n"
-           "} LIMIT 1"))
-         (rows (query-wikidata/alist find-uris ua)))
-    (if (null? rows)
-        (display "No URIs found for Bill Gates/Microsoft.\n")
-        (let* ((row (car rows))
-               (bill (alist-ref 'bill row))
-               (microsoft (alist-ref 'microsoft row))
-               (rel-query
-                (string-append
-                 "PREFIX wikibase: <http://wikiba.se/ontology#>\n"
-                 "PREFIX bd: <http://www.bigdata.com/rdf#>\n"
-                 "SELECT ?prop ?propLabel ?dir WHERE {\n"
-                 "  VALUES (?bill ?microsoft) { (<" bill "> <" microsoft ">) }\n"
-                 "  ?wdprop wikibase:directClaim ?prop .\n"
-                 "  { BIND(\"Bill->Microsoft\" AS ?dir) ?bill ?prop ?microsoft . }\n"
-                 "  UNION\n"
-                 "  { BIND(\"Microsoft->Bill\" AS ?dir) ?microsoft ?prop ?bill . }\n"
-                 "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". }\n"
-                 "}\n"
-                 "ORDER BY ?propLabel"))
-               (rels (query-wikidata/alist rel-query ua)))
-          (display (format "Bill Gates URI: ~a\n" bill))
-          (display (format "Microsoft URI: ~a\n" microsoft))
-          (if (null? rels)
-              (display "No direct relationships found.\n")
-              (for-each
-               (lambda (r)
-                 (display (format "~a: ~a\n"
-                                  (alist-ref 'dir r)
-                                  (or (alist-ref 'propLabel r)
-                                      (alist-ref 'prop r)))))
-               rels))))))
-
-;; Example Usage with User-Agent from env var WDQS_UA
-(def (test2-ua)
-  (let* ((ua (or (getenv "WDQS_UA")
-                 "YourApp/1.0 (https://your.site; you@site)"))
-         (query
-          (string-append
-           "PREFIX wd: <http://www.wikidata.org/entity/>\n"
-           "PREFIX wdt: <http://www.wikidata.org/prop/direct/>\n"
-           "PREFIX wikibase: <http://wikiba.se/ontology#>\n"
-           "PREFIX bd: <http://www.bigdata.com/rdf#>\n"
-           "SELECT ?birthDate ?birthPlaceLabel WHERE {\n"
-           "  wd:Q7249 wdt:P569 ?birthDate .\n"
-           "  wd:Q7249 wdt:P19 ?birthPlace .\n"
-           "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". }\n"
-           "}")))
-    (let ((results (query-wikidata/alist query ua)))
-      (for-each
-       (lambda (result)
-         (display (format "Birth Date: ~a\n" (alist-ref 'birthDate result)))
-         (display (format "Birth Place: ~a\n\n" (alist-ref 'birthPlaceLabel result))))
-       results))))
 ```
 
-The core of this example is built around the **query-wikidata** and **query-wikidata/alist** functions. These procedures handle the low-level details of HTTP communication with the Wikidata SPARQL endpoint. They take a SPARQL query string, URI-encode it, and embed it into a GET request URL. They set a User-Agent string, a best practice that helps service operators identify the source of traffic; the functions allow this header to be overridden via an optional argument. After a successful request, the real data processing begins. The raw JSON response from a SPARQL endpoint is deeply nested, with each result variable wrapped in an object containing its type and value. The helper functions **process-sparql-results** and **process-sparql-results-alist** traverse this structure to extract the essential value of each binding, returning a clean list of results where each result is either a hash table or an association list mapping variable names (as symbols) to their values.
+The core of this example is built around the **query-wikidata** procedure (and its convenience wrapper **query-wikidata/alist**). This procedure handles the HTTP communication with the Wikidata SPARQL endpoint. It takes a SPARQL query string, URI-encodes it, and embeds it into a GET request URL. It sets a User-Agent string, a requirement under Wikidata Query Service guidelines that helps service operators identify traffic; the default can be set via the `WDQS_UA` environment variable or passed explicitly via the `user-agent:` keyword argument. It also automatically handles HTTP 429 rate-limiting responses by waiting and retrying if a `Retry-After` header is provided. After a successful request, the raw JSON response is parsed into either a list of hash tables or a list of association lists mapping variable names (as symbols) to values, preserving datatype and language tags.
 
-The included test functions, **test1** and **test2**, serve as practical examples of this code's capabilities. The **test2** function is a straightforward lookup, retrieving the birth date and birthplace for a specific Wikidata entity (Grace Hopper, wd:Q7249). In contrast, **test1** demonstrates a more powerful, dynamic pattern. It first runs a query to find the URIs for "Bill Gates" and "Microsoft" based on their English labels and types (human and business, respectively). It then uses these dynamically discovered URIs to construct a second query that finds all direct properties linking the two entities. This two-step approach is a common and robust method for interacting with linked data systems. Furthermore, the test1-ua and test2-ua variants illustrate how to provide a custom User-Agent string, for instance by reading it from an environment variable, showcasing the flexibility of the primary query functions.
+The included test functions, **test1** and **test2**, serve as practical examples of this code's capabilities. The **test2** function is a straightforward lookup, retrieving the birth date and birthplace for a specific Wikidata entity (Grace Hopper, wd:Q11641). In contrast, **test1** demonstrates a more powerful, dynamic pattern. It first runs a query to find the URIs for "Bill Gates" and "Microsoft" based on their English labels and types (human and business, respectively). It then uses these dynamically discovered URIs to construct a second query that finds all direct properties linking the two entities. Note that matching on `rdfs:label` scans the full label index; in high-throughput applications, the `wikibase:mwapi` EntitySearch service is faster.
 
 The following architecture diagram provides an overview of the Wikidata client's structure, showing how SPARQL queries are URL-encoded, sent as HTTP GET requests to the Wikidata Query Service endpoint, and how the JSON results are parsed and transformed into idiomatic Gerbil Scheme data structures.
 
@@ -244,22 +184,24 @@ We use a Makefile target to start a Gerbil Scheme REPL with the example code loa
 Here is the Makefile:
 
 ```makefile
-$ cat Makefile 
 run:
 	gxi -L wikidata.ss -
 
 test:
 	gxi -L wikidata.ss -e "(test2)"
 
-run-agent:
-	WDQS_UA="$${WDQS_UA:-YourApp/1.0 (https://your.site; you@site)}" gxi -L wikidata.ss -e "(test2-ua)"
-
 test1:
 	gxi -L wikidata.ss -e "(test1)"
 
+run-agent:
+	WDQS_UA="$${WDQS_UA:-YourApp/1.0 (https://your.site; you@site)}" gxi -L wikidata.ss -e "(test2)"
+
 run-agent1:
-	WDQS_UA="$${WDQS_UA:-YourApp/1.0 (https://your.site; you@site)}" gxi -L wikidata.ss -e "(test1-ua)"
-  ```
+	WDQS_UA="$${WDQS_UA:-YourApp/1.0 (https://your.site; you@site)}" gxi -L wikidata.ss -e "(test1)"
+
+clean:
+	rm -rf .gerbil *~
+```
 
 And sample output:
 
@@ -286,7 +228,7 @@ Birth Place: Venice
 
 1. **Large City Query**: Write a SPARQL query using `query-wikidata/alist` to find all cities with a population greater than 1 million, and print their names and populations in descending order.
 2. **In-Memory Cache**: Implement an in-memory query cache that maps SPARQL query strings to their parsed JSON results, avoiding redundant API calls for duplicate requests.
-3. **URI Parser Helper**: Implement a helper function `extract-entity-id` that extracts the alphanumeric entity identifier (such as `"Q7249"`) from a full Wikidata entity URI (like `"http://www.wikidata.org/entity/Q7249"`).
+3. **URI Parser Helper**: Implement a helper function `extract-entity-id` that extracts the alphanumeric entity identifier (such as `"Q11641"`) from a full Wikidata entity URI (like `"http://www.wikidata.org/entity/Q11641"`).
 
 
 

@@ -4,7 +4,7 @@
 (import :std/format) ;; for 'format'
 
 (def (usage)
-  (print-exit 2 "usage: mytool [-v] --name=STR [ARGS...]"))
+  (print-exit 2 "usage: test-tool.ss [-v] --name STR [ARGS...]"))
 
 (def (main . argv)
   (let* ((parser (getopt (flag 'verbose "-v" "--verbose")
@@ -14,7 +14,7 @@
          (verbose (hash-get opts 'verbose)))
     (unless name (usage))
     (when verbose (display "verbose on\n"))
-    (displayln (format "Hello, ~a\n" name))
+    (displayln (format "Hello, ~a" name))
     0))
 
 

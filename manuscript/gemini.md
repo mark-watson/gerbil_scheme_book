@@ -9,51 +9,60 @@ Here you will learn how to send prompts to the Google Gemini AI models. For info
 
 In this section, we'll explore a practical example of interacting with a modern web API by building a client for Google's Gemini Large Language Model. The following program defines a function named **gemini** that takes a text prompt and returns the model's generated response. This involves several common tasks in modern software development: retrieving sensitive information like an API key from environment variables, dynamically constructing a JSON payload according to the API's specification, setting the correct HTTP headers for authentication and content type, and executing an HTTP POST request. Upon receiving a successful response, the code demonstrates how to parse the returned JSON data to extract the specific piece of information we need—the generated text from a complex, nested data structure. This serves as a simple example for making outbound web requests and handling the data interchange that is central to working with external services.
 
-{lang="scheme", linenos=off}
-```
+```scheme
 (import :std/net/request
         :std/text/json)
 
 (export gemini)
 
-(def (pprint-hashtable ht)
-  "Prints a hash table with line breaks and indentation."
-  (hash-map (lambda (k v) (displayln "key: " k " value: " v)) ht)) 
-
 (def (gemini
       prompt
-      model: (model "gemini-2.5-flash")
-      system-prompt: (system-prompt "You are a helpful assistant."))
-  (let ((api-key (get-environment-variable "GOOGLE_API_KEY")))
+      model: (model "gemini-3-flash-preview")
+      system-prompt: (system-prompt #f))
+  (let ((api-key (getenv "GOOGLE_API_KEY")))
     (unless api-key
-      (error "GEMINI_API_KEY environment variable not set."))
+      (error "GOOGLE_API_KEY environment variable not set."))
 
-    (let* ((headers `(("Content-Type". "application/json")
-                         ("x-goog-api-key". ,api-key)))
-           (body-data
-            (list->hash-table
-             `(("contents". ,(list
-                              (list->hash-table
-                               `(("role". "user")
-                                 ("parts". ,(list (list->hash-table `(("text". ,prompt))))))))))))
+    (let* ((headers `(("Content-Type" . "application/json")
+                      ("x-goog-api-key" . ,api-key)
+                      ("Api-Revision" . "2026-05-20")))
+           (body-fields `(("model" . ,model)
+                          ("input" . ,prompt)))
+           (body-fields (if system-prompt
+                            (cons `("system_instruction" .
+                                    ,(list->hash-table
+                                      `(("parts" . (,(list->hash-table `(("text" . ,system-prompt))))))))
+                                  body-fields)
+                            body-fields))
+           (body-data (list->hash-table body-fields))
            (body-string (json-object->string body-data))
-           (endpoint (string-append "https://generativelanguage.googleapis.com/v1beta/models/"
-                                    model ":generateContent?key=" api-key)))
+           (endpoint "https://generativelanguage.googleapis.com/v1beta/interactions"))
       (let ((response (http-post endpoint headers: headers data: body-string)))
-        (displayln response)
         (if (= (request-status response) 200)
           (let* ((response-json (request-json response))
-                 (candidate (car (hash-ref response-json 'candidates)))
-                 (content (hash-ref candidate 'content))
-                 (p1 (car (hash-ref content 'parts))))
-            (hash-ref p1 'text)))))))
+                 (steps (hash-ref response-json 'steps #f))
+                 (model-step
+                  (and (pair? steps)
+                       (let loop ((ss (reverse steps)))
+                         (cond
+                          ((null? ss) #f)
+                          ((equal? (hash-ref (car ss) 'type #f) "model_output") (car ss))
+                          (else (loop (cdr ss)))))))
+                 (content (and model-step (hash-ref model-step 'content #f)))
+                 (first-content (and (pair? content) (car content))))
+            (if first-content
+                (hash-ref first-content 'text "")
+                (error "Gemini API: no model_output found in response")))
+          (error "Gemini API request failed"
+                 status: (request-status response)
+                 body: (request-text response)))))))
 
 ;;  (gemini "why is the sky blue? be very concise")
 ```
 
-The core logic resides within the gemini function, which uses a series of let* bindings to sequentially construct the components of the API request. First, it defines the necessary HTTP headers, including the API key. Next, it builds the body-data as a nested hash table, precisely matching the structure required by the Gemini API, before serializing it into a JSON string using **json-object->string**. Finally, the full endpoint URL is assembled by concatenating the base URL with the specific model being used. The actual network communication is handled by the http-post function, which sends all the prepared information to the Google servers.
+The core logic resides within the `gemini` function, which uses `let*` bindings to construct the request. It defines the required HTTP headers, including `x-goog-api-key` and the `Api-Revision` header. Next, it builds the body data as a hash table with `model`, `input`, and optional `system_instruction` fields, serializing it into a JSON string using `json-object->string`. The endpoint points to Google's Interactions API endpoint (`/v1beta/interactions`). The network communication is handled by `http-post`.
 
-Once the http-post call returns, the program immediately checks the response status. If the request was successful (status code 200), it proceeds to parse the data; otherwise, nothing is returned. The parsing logic is a chain of data extraction operations on the JSON response, which is first converted into a Gerbil Scheme hash table. Using a combination of **hash-ref** to access values by their keys (like 'candidates and 'content) and the function **car** to access the first element of a list, the code navigates the nested data structure to isolate the desired text content. This sequence elegantly demonstrates how Gerbil Scheme's standard library functions for handling lists and hash tables can be composed to efficiently process structured data from external APIs.
+Once `http-post` returns, the program checks the response status. If the request was successful (HTTP 200), it parses the JSON response and walks the `steps` array to find the `model_output` step, extracting the text from the first content part. If the request fails or the model returns an error, a descriptive exception is raised with the HTTP status and body text. This demonstrates how Gerbil Scheme's standard library functions for lists and hash tables compose cleanly to process structured API data.
 
 The following architecture diagram shows the overall structure of this example, illustrating how the Gerbil Scheme client constructs an HTTP request, communicates with the Google Gemini API endpoint, and parses the JSON response to extract the generated text.
 
@@ -62,7 +71,7 @@ The following architecture diagram shows the overall structure of this example, 
 
 ## Example Output
 
-Change directory to **source-code/gemini** an run:
+Change directory to **source_code/gemini** and run:
 
 ```console
 $ gxi -L gemini.ss -

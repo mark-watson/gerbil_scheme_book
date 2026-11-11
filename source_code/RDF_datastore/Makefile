@@ -1,6 +1,8 @@
-.PHONY: all run compile clean
+.PHONY: all run test compile clean
 
 all: run
+
+test: run
 
 ## Run the demo directly with the Gerbil interpreter (no compilation needed)
 run:
