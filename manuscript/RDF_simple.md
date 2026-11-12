@@ -7,14 +7,14 @@ is a W3C standard for representing
 knowledge as a graph of statements.  Every statement is a *triple*: a
 subject, a predicate, and an object.  Taken together, a collection of triples
 forms a directed, labeled graph that can represent almost any kind of
-structured knowledge — from social networks and bibliographic data to
+structured knowledge, from social networks and bibliographic data to
 scientific datasets and knowledge bases.
 
 SPARQL is the standard query language for RDF graphs.  It lets you express
 *patterns* of triples you are looking for, binding variables to the parts of
 the graph that match.  A full SPARQL 1.1 engine is a substantial piece of
-software, but the core idea — match a set of triple patterns against a store
-and collect the variable bindings — is surprisingly straightforward to
+software, but the core idea (matching a set of triple patterns against a store
+and collecting the variable bindings) is straightforward to
 implement from scratch.
 
 This chapter walks through an implementation in **RDF.ss**, found in the directory
@@ -77,9 +77,9 @@ Scheme list and string operations.
 The parser implemented in `parse-sparql` consumes the token list produced by
 the tokenizer and returns two values via `let-values`:
 
-- **vars** — the list of variable names the query projects, or the single
+- **vars**: the list of variable names the query projects, or the single
   wildcard token `"*"` when the query uses `SELECT *`.
-- **patterns** — the list of triple patterns from the `WHERE` clause, each
+- **patterns**: the list of triple patterns from the `WHERE` clause, each
   represented as a three-element list of strings in the same `(s p o)` shape
   as stored triples.
 
@@ -89,7 +89,7 @@ non-variable.  It then scans to the opening `{` of the `WHERE` block and
 reads groups of three tokens as triple patterns, discarding optional trailing
 `.` separators and stopping at the closing `}`.
 
-The parser treats tokens as plain strings — resources, literals, and variables
+The parser treats tokens as plain strings: resources, literals, and variables
 are all strings, while SPARQL keywords (`SELECT`, `WHERE`) are matched
 case-insensitively. The tokenizer preserves `<...>` IRIs (such as
 `<http://example.org/Alice>`) and `"..."` string literals atomically without
@@ -104,7 +104,7 @@ The following architecture diagram illustrates the structure of the in-memory RD
 
 ## Query Evaluation: Pattern Matching and Joining
 
-The evaluator in **RDF.ss** works in terms of *environments* — association
+The evaluator in **RDF.ss** works in terms of *environments*, association
 lists that map variable name strings to the string values they have been
 bound to.  An empty environment `'()` represents "no bindings yet" and is
 the starting point for every query.
@@ -118,7 +118,7 @@ predicate, object) it applies one of two rules:
 1. If the pattern element is a variable (detected by `var?`, which checks
    for a leading `?`), look the variable up in the current environment.
    If it is already bound, check that the bound value equals the triple's
-   value at that position — a mismatch means the pattern fails.  If it is
+   value at that position; a mismatch means the pattern fails.  If it is
    unbound, extend the environment with the new binding.
 
 2. If the pattern element is a concrete value (a resource or literal), check
@@ -150,7 +150,7 @@ implements this as a recursive nested-loop join:
 - When no patterns remain, whatever environments are left are the solutions.
 
 This is equivalent to computing a relational cross-product filtered by the
-match conditions — a join.  Because each pattern can bind new variables, the
+match conditions: a join.  Because each pattern can bind new variables, the
 common variables between two patterns act as join keys automatically, without
 any explicit join condition.
 
@@ -167,7 +167,7 @@ each result environment, it calls `project-env`, which walks the selected
 variable list and pulls out the corresponding value from the environment via
 `env-lookup`.
 
-When `SELECT *` is used, no projection is applied — the full environment is
+When `SELECT *` is used, no projection is applied. The full environment is
 returned as-is, which contains all variables that were bound during matching.
 
 ## Gerbil RDF Implementation
@@ -511,7 +511,7 @@ returned as-is, which contains all variables that were bound during matching.
 ### Running with `make`
 
 The `Makefile` provides three targets.  `make run` executes **RDF.ss** directly
-under the Gerbil interpreter `gxi` — no compilation step is needed, making
+under the Gerbil interpreter `gxi`. No compilation step is needed, making
 this the quickest way to see the output.  `make compile` invokes the Gerbil
 compiler `gxc`, which compiles **RDF.ss** into native code and installs the
 resulting module under the package name declared in `gerbil.pkg`
@@ -587,8 +587,8 @@ Query: All ages after removal
 
 `gerbil.pkg` declares the package name `rdf-datastore`.  Gerbil uses this to
 determine the import path of compiled modules.  Once compiled, any other
-Gerbil source file can bring the exported names — `make-store`, `add-triple`,
-`remove-triple`, `store-triples`, `sparql-select`, and `print-all-triples` —
+Gerbil source file can bring the exported names (`make-store`, `add-triple`,
+`remove-triple`, `store-triples`, `sparql-select`, and `print-all-triples`)
 into scope with a single `import` form.  This makes **RDF.ss** usable both as
 a standalone runnable demo and as a reusable library component in a larger
 Gerbil project.
@@ -598,9 +598,9 @@ Gerbil project.
 
 **RDF.ss** demonstrates that the essential machinery of an RDF store and a
 pattern-matching query engine fits comfortably in a single, readable Gerbil
-Scheme source file with no external dependencies.  The key ideas — triples as
+Scheme source file with no external dependencies.  The key ideas (triples as
 lists, environments as association lists, query evaluation as a recursive
-join — are each short enough to understand in isolation, yet they compose
+join) are each short enough to understand in isolation, yet they compose
 directly into a working system.
 
 Several directions are natural next steps from this foundation:

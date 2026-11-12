@@ -106,13 +106,13 @@ The following architecture diagram provides an overview of how the Ollama client
 
 ## Tool/Function Calling with Ollama
 
-Modern LLMs can do more than generate text — they can also decide to call functions. Tool calling (sometimes called function calling) allows a model to inspect a set of tool descriptions you provide, and when appropriate, respond with a structured request to invoke one of those tools rather than producing a plain text answer. Your application then executes the tool, feeds the result back to the model, and the model incorporates that real-world data into its final answer. This creates a powerful agent loop: the model reasons about what information it needs, your code fetches it, and the model synthesizes a response.
+Modern LLMs can do more than generate text; they can also decide to call functions. Tool calling (sometimes called function calling) allows a model to inspect a set of tool descriptions you provide, and when appropriate, respond with a structured request to invoke one of those tools rather than producing a plain text answer. Your application then executes the tool, feeds the result back to the model, and the model incorporates that real-world data into its final answer. This creates a powerful agent loop: the model reasons about what information it needs, your code fetches it, and the model synthesizes a response.
 
 Ollama supports tool calling through its native **/api/chat** endpoint (the **/api/generate** endpoint used in the previous section does not support tools; Ollama also provides an OpenAI-compatible `/v1/chat/completions` endpoint). We will split the implementation across two files: **example_tools.ss** defines the tool registry and example handlers, while **use_tools.ss** implements the chat client and agent loop.
 
 ## Defining Tools: example_tools.ss
 
-The file **gerbil_scheme_book/source_code/ollama/example_tools.ss** establishes a small framework for defining tools that an LLM can call. Each tool has four properties: a name (the identifier the model uses), a description (so the model understands when to use it), a JSON-schema-style parameter specification, and a handler — a Gerbil procedure that actually performs the work and returns a string result.
+The file **gerbil_scheme_book/source_code/ollama/example_tools.ss** establishes a small framework for defining tools that an LLM can call. Each tool has four properties: a name (the identifier the model uses), a description (so the model understands when to use it), a JSON-schema-style parameter specification, and a handler: a Gerbil procedure that actually performs the work and returns a string result.
 
 ```scheme
 (import :std/text/json)
@@ -124,7 +124,7 @@ The file **gerbil_scheme_book/source_code/ollama/example_tools.ss** establishes 
         calculate-handler
         default-tool-registry)
 
-;;; Tool registry — a hash table mapping tool name -> tool record
+;;; Tool registry: a hash table mapping tool name -> tool record
 
 (def (make-tool-registry)
   "Create an empty tool registry (hash table)."
@@ -132,10 +132,10 @@ The file **gerbil_scheme_book/source_code/ollama/example_tools.ss** establishes 
 
 (def (register-tool! registry name description parameters handler)
   "Register a tool in the registry.
-   NAME: string — the function name the LLM will use.
-   DESCRIPTION: string — human-readable description.
-   PARAMETERS: hash table — JSON-schema-style parameter spec.
-   HANDLER: procedure — (lambda (args-hash) ...) -> string."
+   NAME: string: the function name the LLM will use.
+   DESCRIPTION: string: human-readable description.
+   PARAMETERS: hash table: JSON-schema-style parameter spec.
+   HANDLER: procedure: (lambda (args-hash) ...) -> string."
   (hash-put! registry name
     (list->hash-table
       `(("name" . ,name)
@@ -233,7 +233,7 @@ Next we define two example tool handlers and register them into a **default-tool
     reg))
 ```
 
-The **get-weather-handler** is intentionally simple — it always returns "Sunny, 72°F" — since its purpose is to demonstrate the tool-calling protocol rather than integrate with a real weather API. The **calculate-handler** is more interesting: rather than calling Scheme's raw `eval` on model-generated strings (which would be unsafe and allow arbitrary code execution), it tokenizes numbers and arithmetic operators, groups parentheses, and safely evaluates arithmetic expressions with standard operator precedence. The **with-catch** form formats any exception and ensures that malformed expressions return an informative error message rather than crashing the program.
+The **get-weather-handler** is intentionally simple (it always returns "Sunny, 72°F") since its purpose is to demonstrate the tool-calling protocol rather than integrate with a real weather API. The **calculate-handler** is more interesting: rather than calling Scheme's raw `eval` on model-generated strings (which would be unsafe and allow arbitrary code execution), it tokenizes numbers and arithmetic operators, groups parentheses, and safely evaluates arithmetic expressions with standard operator precedence. The **with-catch** form formats any exception and ensures that malformed expressions return an informative error message rather than crashing the program.
 
 Each tool is registered with a JSON-schema describing its parameters. This schema is what the model reads to understand what arguments the tool expects. When you build your own tools, you will follow the same pattern: write a handler function, describe its parameters as a JSON-schema hash table, and call **register-tool!**.
 
@@ -277,7 +277,7 @@ The file **gerbil_scheme_book/source_code/ollama/use_tools.ss** builds on the to
                  body: (request-text response))))))
 ```
 
-The **ollama-chat** function is a lower-level building block: it takes a list of message hash tables (each with "role" and "content" keys), an optional list of tool schemas, and a model name. It constructs the JSON payload, sends it to **/api/chat**, and returns the parsed response. Notice how the **tools** field is only included when tool schemas are provided — this means **ollama-chat** can also be used for plain chat completions without tools.
+The **ollama-chat** function is a lower-level building block: it takes a list of message hash tables (each with "role" and "content" keys), an optional list of tool schemas, and a model name. It constructs the JSON payload, sends it to **/api/chat**, and returns the parsed response. Notice how the **tools** field is only included when tool schemas are provided; this means **ollama-chat** can also be used for plain chat completions without tools.
 
 ```scheme
 (def (dispatch-tool-call registry tool-call)
@@ -326,7 +326,7 @@ The **dispatch-tool-call** function bridges the model's structured tool-call res
              (tool-calls (hash-get message 'tool_calls)))
 
         (cond
-          ;; Model requested tool calls — execute them and loop
+          ;; Model requested tool calls: execute them and loop
           ((and tool-calls (pair? tool-calls))
            (displayln "Model requested " (length tool-calls) " tool call(s).")
 
@@ -349,7 +349,7 @@ The **dispatch-tool-call** function bridges the model's structured tool-call res
                                     `(("role" . "tool")
                                       ("content" . ,result)))))))))))
 
-          ;; No tool calls — return the final text content
+          ;; No tool calls: return the final text content
           (else
            (displayln "Final answer received.")
            (or content "No response content")))))))
@@ -409,7 +409,7 @@ Final answer received.
 
 To add a new tool, follow three steps:
 
-1. **Write a handler** — a procedure that takes a hash table of arguments and returns a string:
+1. **Write a handler**: a procedure that takes a hash table of arguments and returns a string:
 
 ```scheme
 (def (my-lookup-handler args)
@@ -442,7 +442,7 @@ To add a new tool, follow three steps:
                    my-registry)
 ```
 
-The model will read the tool descriptions you provide and decide when to use them based on the user's prompt. Good tool descriptions are important — they help the model understand when a tool is appropriate and what arguments to pass.
+The model will read the tool descriptions you provide and decide when to use them based on the user's prompt. Good tool descriptions are important; they help the model understand when a tool is appropriate and what arguments to pass.
 
 ## Optional Practice Problems
 

@@ -307,7 +307,7 @@ The test proceeds in five phases: first it calls **raptor-parse-file->ntriples**
 The Makefile uses **pkg-config** to auto-detect Raptor2's include and library paths, with a Homebrew fallback for macOS systems where pkg-config may not be in the default search path. This single Makefile works on both macOS and Linux:
 
 ```makefile
-##### macOS and Linux — auto-detects raptor2 paths
+##### macOS and Linux: auto-detects raptor2 paths
 #
 # Requires: raptor2, pkg-config
 #   macOS:  brew install raptor pkg-config

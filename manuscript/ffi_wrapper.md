@@ -35,7 +35,7 @@ wrapper.c
 The following **Makefile** builds the project for macOS:
 
 ```makefile
-# Makefile — DEMO binary + FFI library + Gerbil client
+# Makefile: DEMO binary + FFI library + Gerbil client
 
 # ---- Prefixes (override on CLI if needed) ----
 SORD_PREFIX    ?= /opt/homebrew/opt/sord
@@ -145,7 +145,7 @@ print-flags:
 Alternatively, you can run **make -f Makefile.linux** to build for Linux:
 
 ```makefile
-# Makefile for Ubuntu Linux — DEMO binary + FFI library + Gerbil client
+# Makefile for Ubuntu Linux: DEMO binary + FFI library + Gerbil client
 
 # ---- Tools ----
 CC         ?= cc
@@ -383,7 +383,7 @@ Finally, the wrapper provides essential memory management and utility functions.
 The shim code is n the source file **rdfwrap.ss**:
 
 ```scheme
-;; rdfwrap.ss — minimal FFI for libRDFWrap.dylib using :std/foreign
+;; rdfwrap.ss: minimal FFI for libRDFWrap.dylib using :std/foreign
 (import :std/foreign)
 (export rdf-init rdf-query rdf-free)
 

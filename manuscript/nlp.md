@@ -216,7 +216,7 @@ We will not discuss the following code files:
 - proper-names.ss - identify proper names in text.
 
 
-The following architecture diagram illustrates the structure of the NLP project, showing how the various modules — tokenization, part-of-speech tagging, categorization, key phrase extraction, and name recognition — are composed into the processing pipeline exposed by the `main.ss` entry point.
+The following architecture diagram illustrates the structure of the NLP project, showing how the various modules (tokenization, part-of-speech tagging, categorization, key phrase extraction, and name recognition) are composed into the processing pipeline exposed by the `main.ss` entry point.
 
 {width: "80%"}
 ![Architecture diagram for the NLP project](nlp_architecture.png)

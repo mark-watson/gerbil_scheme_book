@@ -128,7 +128,7 @@ The FFI layer in **ffi.ss** maps the C API to Gerbil Scheme using Gambit's `c-la
 'C'
   )
 
-  ;; The dispatcher variable — defined INSIDE begin-ffi
+  ;; The dispatcher variable: defined INSIDE begin-ffi
   ;; so c-define can see it
   (define *bridge-dispatcher* #f)
 

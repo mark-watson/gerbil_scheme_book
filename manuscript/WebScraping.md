@@ -385,12 +385,12 @@ gxi test_webscrape.ss
 =============================================
 1. TESTING PLAIN TEXT EXTRACTION FROM: https://markwatson.com
 =============================================
-Mark Watson — Open Source Artificial Intelligence Research
+Mark Watson - Open Source Artificial Intelligence Research
 
 Independent open source Artificial Intelligence research. Author of 20+ books, holder of 55 US patents, with over 40 years of experience helping organizations like Google , Capital One , Disney , SAIC , and CompassLabs .
 
 Books
-Read My Books — Many for Free
+Read My Books - Many for Free
 
 All of my recent books are available on Leanpub. Most can be read online at no cost.
 
@@ -401,7 +401,7 @@ Practical Python Artificial Inte
 =============================================
 2. TESTING MARKDOWN EXTRACTION FROM: https://markwatson.com
 =============================================
-Mark Watson — Open Source Artificial Intelligence Research
+Mark Watson - Open Source Artificial Intelligence Research
 
 - [Blogspot](https://mark-watson.blogspot.com/)
 
@@ -421,7 +421,7 @@ Independent open source Artificial Intelligence research. Author of 20+ books, h
 3. TESTING HEADERS EXTRACTION (H1, H2, H3) FROM: https://markwatson.com
 =============================================
 # Mark Watson .
-## Read My Books — Many for Free
+## Read My Books - Many for Free
 ## Connect & Interests
 ### Writings & Blogs
 ### Open Source

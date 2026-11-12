@@ -94,7 +94,7 @@ Here is the full `cache.ss` module:
 
 ```scheme
 ;;; -*- Gerbil -*-
-;;; daily_use/cache.ss — File-based persistent cache for Gemini answers
+;;; daily_use/cache.ss: File-based persistent cache for Gemini answers
 ;;;
 ;;; Stores entries as s-expression pairs in a file, one per line:
 ;;;   (timestamp . "answer text")
@@ -229,7 +229,7 @@ The main module provides the Gemini API client, the keyword extraction pipeline,
 
 ```scheme
 ;;; -*- Gerbil -*-
-;;; daily_use/main.ss — Interactive Gemini REPL with search grounding and cache
+;;; daily_use/main.ss: Interactive Gemini REPL with search grounding and cache
 
 (import :std/net/request
         :std/text/json
@@ -348,7 +348,7 @@ The main module provides the Gemini API client, the keyword extraction pipeline,
       (displayln text)
       (displayln "")
       (set! *last-answer* text))
-    (displayln "\n  [No response from Gemini — check model name or API key]\n")))
+    (displayln "\n  [No response from Gemini: check model name or API key]\n")))
 
 (def (repl-loop)
   (displayln "\n  Gemini Daily-Use REPL  (type 'h' for help)\n")
@@ -626,7 +626,7 @@ gemini> what are some good sci-fi movies playing near me?
 
 Based on our previous conversation, **Dune: Messiah** and **Project
 Hail Mary** are currently playing at the Harkins Flagstaff 16. Both
-are critically acclaimed — Project Hail Mary in particular has received
+are critically acclaimed. Project Hail Mary in particular has received
 outstanding reviews for its faithful adaptation of Andy Weir's novel.
 
 gemini> !current version of Gerbil Scheme as of today?
@@ -645,7 +645,7 @@ gemini> what gerbil version should I install?
 
 Based on our previous conversation, the current stable release of
 Gerbil Scheme is **v0.18.1** (as of July 2026). That is the version
-you should install — it can be obtained via `brew install
+you should install. It can be obtained via `brew install
 gerbil-scheme` on macOS.
 
 gemini> !
