@@ -12,7 +12,6 @@ Here you will learn how to send prompts to the Groq LLM inference service. For i
 
 This project is stored in the directory **gerbil_scheme_book/source_code/groq_llm_inference**. There is one common utility file **groq_inference.ss** and currently two very short example scripts that use this utility:
 
-- kimi2.ss - Uses Moonshot AI's Kimi2 model (MOE 1 trillion parameters, with 32B active).
 - gpt-oss-120b.ss - Uses OpenAI's open source model gpt-oss-120b.
 
 Both of these models are practical models that are excellent for data manipulation, coding, and general purpose use.
@@ -25,47 +24,21 @@ Here is the project Makefile:
 compile: groq_inference.ss
 	gxc groq_inference.ss 
 
-kimi2: compile
-	gxi -l kimi2.ss -
-
 gpt-oss-120b: compile
 	gxi -l gpt-oss-120b.ss -
 ```
 
 
-### Kimi2 (Moonshot AI)
-
-Features:
-
-- Architecture: A very large-scale Mixture of Experts (MoE) model.
-- Parameters: It has a staggering 1 trillion total parameters. For any given token during inference, it activates approximately 32 billion of these parameters. This represents a very sparse activation (around 3.2%).
-- Specialization: Kimi2 is highly optimized for agentic capabilities, meaning it excels at using tools, reasoning through multi-step problems, and advanced code synthesis.
-- Training Innovation: It was trained using a novel optimizer called MuonClip, designed to ensure stability during large-scale MoE training runs, which have historically been prone to instability.
-- Context Window: It supports a large context window of up to 128,000 tokens, making it suitable for tasks involving long documents or extensive codebases.
-- Licensing: While the model weights are publicly available ("open-weight"), its specific licensing and training data details are proprietary to Moonshot AI.
-
 ### gpt-oss-120b (OpenAI)
 
 Features:
 
-- Architecture: Also a Mixture of Experts (MoE) model, but at a smaller scale than Kimi2.
+- Architecture: Also a Mixture of Experts (MoE) model, but at a smaller scale than other available models.
 - Parameters: It has a total of 117 billion parameters, with a much smaller active set of around 5.1 billion parameters per token. This results in a similarly sparse activation (around 4.4%).
 - Efficiency and Accessibility: A primary feature is its optimization for efficient deployment. It's designed to run on a single 80 GB GPU (like an H100), making it significantly more accessible for researchers and smaller organizations.
-- Focus: Like Kimi2, it is designed for high-reasoning, agentic tasks, and general-purpose use.
+- Focus: Designed for high-reasoning, agentic tasks, and general-purpose use.
 - Licensing: It is a true open-source model, released under the permissive Apache 2.0 license. This allows for broad use, modification, and redistribution.
 - Training: It was trained using a combination of reinforcement learning and distillation techniques from OpenAI's more advanced proprietary models.
-
-### Comparison and Use Cases
-
-| Feature | Kimi2 (Moonshot AI) | gpt-oss-120b (OpenAI) |
-|---|---|---|
-| **Architecture** | Massive-scale Mixture of Experts (MoE) | Efficient Mixture of Experts (MoE) |
-| **Total Parameters** | ~1 Trillion | ~117 Billion |
-| **Active Parameters** | ~32 Billion | ~5.1 Billion |
-| **Primary Goal** | Pushing the upper limits of performance and scale. | Balancing high performance with deployment efficiency. |
-| **Hardware Target** | Large-scale, high-end compute clusters. | Single high-end GPU (e.g., H100). |
-| **Licensing** | Open-Weight (proprietary) | Open-Source (Apache 2.0) |
-| **Key Differentiator** | Sheer scale; novel MuonClip optimizer. | Accessibility, efficiency, and permissive open license. |
 
 ## groq_inference.ss Utility
 
@@ -116,32 +89,10 @@ The implementation begins by defining the **groq_inference** function, which acc
 
 Upon receiving a response, the function demonstrates robust result processing and error handling. It first checks if the HTTP status code is 200 (OK), indicating a successful request. If it is, a series of **let*** bindings are used to safely parse the JSON response and navigate the nested data structure to extract the final content string from **response['choices'][0]['message']['content']**, with checks at each step to prevent errors on an unexpected response format. If the content is successfully extracted, it is returned as the result of the function. However, if the HTTP status is anything other than 200, the function enters its error-handling branch, raising a descriptive error that includes the failing status code and the raw text body of the response, providing valuable debugging information to the caller.
 
-The following architecture diagram shows the overall structure of the Groq inference project, illustrating how the common `groq_inference` utility communicates with the Groq API and how the individual model wrapper scripts (`kimi2.ss` and `gpt-oss-120b.ss`) delegate to it.
 
-{width: "80%"}
-![Architecture diagram for the Groq LLM inference example](groq_architecture.png)
-
-## Example scripts: kimi2.ss and gpt-oss-120b.ss
+## Example script: gpt-oss-120b.ss
 
 These two scripts are simple enough to just list without comment:
-
-**kimi2.ss**
-
-```scheme
-(import :groq/groq_inference)
-
-;; Use Moonshot AI's best kimi2 model (MOE: 1 trillion parameters, 32B resident).
-
-; Export the `kimi2` procedure from this module
-(export kimi2)
-
-(def (kimi2 prompt
-            model: (model "moonshotai/kimi-k2-instruct")
-            system-prompt: (system-prompt "You are a helpful assistant."))
-  (groq_inference model prompt system-prompt: system-prompt))
-
-;; (kimi2 "why is the sky blue? be very concise")
-```
 
 **gpt-oss-120b.ss**
 
@@ -162,26 +113,6 @@ These two scripts are simple enough to just list without comment:
 ;; (gpt-oss-120b "why is the sky blue? be very concise")
 ```
 
-**Running the kimi2 example:**
-
-Note, the utility must be compiled one time: **gxc groq_inference.ss**. The compiled library by default will be in the directory **~/.gerbil/lib/groq/** because we set this project's module name to **groq** in the file **gerbil.pkg**.
-
-```console
- $ gxi -l kimi2.ss                   
-> (displayln (kimi2 "explain concisely what evidence there is for 'dark matter' in the universe, and counter arguments. Be concise!"))
-Evidence for dark matter  
-• Galaxy rotation curves: outer stars orbit too fast for visible mass alone.  
-• Gravitational lensing: mass maps exceed baryonic matter.  
-• Cosmic Microwave Background: tiny temperature ripples fit models with ~5× more dark than baryonic matter.  
-• Structure formation: simulations need unseen matter to match today’s galaxy distribution.  
-• Bullet Cluster: collision separated hot gas (baryons) from dominant mass peak, consistent with collisionless dark matter.
-
-Counter-arguments / alternatives  
-• Modified Newtonian Dynamics (MOND): tweaks gravity law to explain rotation curves without extra mass.  
-• Modified gravity theories (TeVeS, f(R), emergent gravity) reproduce lensing and CMB with no dark particles.  
-• Claims of inconsistent lensing signals or tidal dwarf galaxies without dark matter challenge universality.
-> 
-```
 
 **Running the gpt-oss-120b example:**
 
@@ -199,7 +130,6 @@ factorial n = n * factorial (n - 1)
 ## Optional Practice Problems
 
 1. **Hyperparameter Configuration**: Modify the function `groq_inference` in `groq_inference.ss` to accept optional keyword arguments for `temperature`, `max_tokens`, and `top_p` to control generation randomness and length.
-2. **Model Wrappers**: Create a new wrapper file, similar to `kimi2.ss`, for another popular open model hosted on Groq, such as `llama3-70b-8192` or `mixtral-8x7b-32768`.
-3. **Fallback Client**: Implement a fallback mechanism inside `groq_inference` that automatically retries the query using a faster, smaller model (e.g., `llama3-8b`) if the initial request to a large model fails or times out.
+2. **Fallback Client**: Implement a fallback mechanism inside `groq_inference` that automatically retries the query using a faster, smaller model (e.g., `llama3-8b`) if the initial request to a large model fails or times out.
 
 

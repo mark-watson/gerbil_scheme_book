@@ -21,13 +21,9 @@ Groq's proprietary LPU hardware delivers dramatically lower latency and higher t
 | File | Description |
 |------|-------------|
 | `groq_inference.ss` | Core library — exports `groq_inference` procedure |
-| `kimi2.ss` | Convenience wrapper for `moonshotai/kimi-k2-instruct` (1T-param MoE model) |
 | `gpt-oss-120b.ss` | Convenience wrapper for `openai/gpt-oss-120b` (OpenAI open-source 120B model) |
 | `Makefile` | Build and run targets |
 
-## Architecture
-
-![Generated image](architecture.png)
 
 ## How to run
 
@@ -37,15 +33,6 @@ Groq's proprietary LPU hardware delivers dramatically lower latency and higher t
 make compile
 # or:
 gxc groq_inference.ss
-```
-
-### Interactive session with kimi2
-
-```bash
-make kimi2
-# drops you into gxi with kimi2 loaded
-> (import "kimi2")
-> (kimi2 "Explain tail recursion in one sentence.")
 ```
 
 ### Interactive session with gpt-oss-120b
@@ -66,16 +53,6 @@ make gpt-oss-120b
 ```
 
 Returns the response text as a string, or raises an error on API failure.
-
-### `kimi2` (convenience wrapper)
-
-```scheme
-(kimi2 prompt
-       model: "moonshotai/kimi-k2-instruct"   ; optional override
-       system-prompt: "...")                    ; optional
-```
-
-Moonshot AI's Kimi K2 is a Mixture-of-Experts model with 1 trillion total parameters (32B resident). It performs well on coding and reasoning tasks.
 
 ### `gpt-oss-120b` (convenience wrapper)
 
